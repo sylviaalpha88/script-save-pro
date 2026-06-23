@@ -12,7 +12,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Plus, Trash2, FileText } from "lucide-react";
 
-const NAV = [{ to: "/pharmacy", label: "Pharmacy" }];
+const NAV = [
+  { to: "/pharmacy", label: "Pharmacy" },
+  { to: "/inventory", label: "Inventory" },
+  { to: "/admin", label: "Admin" },
+];
 
 export const Route = createFileRoute("/pharmacy")({
   component: PharmacyPage,
@@ -73,7 +77,7 @@ function DrugPicker({ drugs, onAdd }: { drugs: Drug[]; onAdd: (d: Drug, qty: num
                 <button type="button" key={d.id} onClick={() => { setSel(d); setQ(d.name); }}
                   className="w-full text-left px-3 py-2 hover:bg-accent text-sm flex justify-between">
                   <span>{d.name} <span className="text-muted-foreground">({d.unit})</span></span>
-                  <span className="text-muted-foreground">stock: {d.stock_quantity} · ${Number(d.selling_price).toFixed(2)}</span>
+                  <span className="text-muted-foreground">stock: {d.stock_quantity} · KSh {Number(d.selling_price).toFixed(2)}</span>
                 </button>
               ))}
             </div>
@@ -102,8 +106,8 @@ function LineItemsTable({ items, onRemove }: { items: LineItem[]; onRemove: (i: 
             <TableRow key={i}>
               <TableCell>{it.drug_name}</TableCell>
               <TableCell className="text-right">{it.quantity}</TableCell>
-              <TableCell className="text-right">${it.unit_price.toFixed(2)}</TableCell>
-              <TableCell className="text-right font-medium">${(it.unit_price * it.quantity).toFixed(2)}</TableCell>
+              <TableCell className="text-right">KSh {it.unit_price.toFixed(2)}</TableCell>
+              <TableCell className="text-right font-medium">KSh {(it.unit_price * it.quantity).toFixed(2)}</TableCell>
               <TableCell className="text-right"><Button size="sm" variant="ghost" onClick={() => onRemove(i)}><Trash2 className="h-4 w-4 text-destructive"/></Button></TableCell>
             </TableRow>
           ))}

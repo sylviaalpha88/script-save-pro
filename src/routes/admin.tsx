@@ -17,6 +17,8 @@ import { Trash2, Users, DollarSign, ShoppingCart, TrendingUp } from "lucide-reac
 
 const ADMIN_NAV = [
   { to: "/admin", label: "Dashboard" },
+  { to: "/pharmacy", label: "Pharmacy" },
+  { to: "/inventory", label: "Inventory" },
 ];
 
 export const Route = createFileRoute("/admin")({
@@ -97,9 +99,9 @@ function SalesPanel() {
       </Card>
 
       <div className="grid sm:grid-cols-3 gap-4">
-        <StatCard icon={<ShoppingCart className="h-5 w-5"/>} label="Retail Sales" value={`$${sum(retail).toFixed(2)}`} sub={`${retail.length} transactions`} />
-        <StatCard icon={<TrendingUp className="h-5 w-5"/>} label="Wholesale Sales" value={`$${sum(whole).toFixed(2)}`} sub={`${whole.length} transactions`} />
-        <StatCard icon={<DollarSign className="h-5 w-5"/>} label="Total" value={`$${sum(rows).toFixed(2)}`} sub={`${rows.length} transactions`} />
+        <StatCard icon={<ShoppingCart className="h-5 w-5"/>} label="Retail Sales" value={`KSh ${sum(retail).toFixed(2)}`} sub={`${retail.length} transactions`} />
+        <StatCard icon={<TrendingUp className="h-5 w-5"/>} label="Wholesale Sales" value={`KSh ${sum(whole).toFixed(2)}`} sub={`${whole.length} transactions`} />
+        <StatCard icon={<DollarSign className="h-5 w-5"/>} label="Total" value={`KSh ${sum(rows).toFixed(2)}`} sub={`${rows.length} transactions`} />
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
@@ -140,7 +142,7 @@ function SalesTable({ title, rows }: { title: string; rows: SaleRow[] }) {
               <TableRow key={r.id}>
                 <TableCell>{new Date(r.created_at).toLocaleString()}</TableCell>
                 <TableCell>{r.customer_name ?? "—"}</TableCell>
-                <TableCell className="text-right font-medium">${Number(r.total).toFixed(2)}</TableCell>
+                <TableCell className="text-right font-medium">KSh {Number(r.total).toFixed(2)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -196,7 +198,7 @@ function PerItemHistory() {
                 <TableCell>{r.day}</TableCell>
                 <TableCell>{r.drug_name}</TableCell>
                 <TableCell className="text-right">{r.quantity}</TableCell>
-                <TableCell className="text-right">${r.revenue.toFixed(2)}</TableCell>
+                <TableCell className="text-right">KSh {r.revenue.toFixed(2)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

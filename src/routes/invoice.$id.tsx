@@ -92,15 +92,15 @@ function InvoicePage() {
                   <tr key={i} className="border-b">
                     <td className="py-2">{it.drug_name}</td>
                     <td className="py-2 text-right">{it.quantity}</td>
-                    <td className="py-2 text-right">${Number(it.unit_price).toFixed(2)}</td>
-                    <td className="py-2 text-right">${Number(it.subtotal).toFixed(2)}</td>
+                    <td className="py-2 text-right">KSh {Number(it.unit_price).toFixed(2)}</td>
+                    <td className="py-2 text-right">KSh {Number(it.subtotal).toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
                 <tr>
                   <td colSpan={3} className="pt-4 text-right font-semibold">Total</td>
-                  <td className="pt-4 text-right text-xl font-bold">${Number(sale.total).toFixed(2)}</td>
+                  <td className="pt-4 text-right text-xl font-bold">KSh {Number(sale.total).toFixed(2)}</td>
                 </tr>
               </tfoot>
             </table>
