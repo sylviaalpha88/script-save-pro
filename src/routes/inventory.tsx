@@ -14,8 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Package } from "lucide-react";
 
-const NAV = [{ to: "/inventory", label: "Inventory" }];
-
 export const Route = createFileRoute("/inventory")({
   component: InventoryPage,
 });
@@ -32,8 +30,11 @@ type Drug = {
 
 function InventoryPage() {
   const { profile, loading } = useAuth();
+  const nav = profile?.role === "admin"
+    ? [{ to: "/admin", label: "Dashboard" }, { to: "/pharmacy", label: "Pharmacy" }, { to: "/inventory", label: "Inventory" }]
+    : [{ to: "/inventory", label: "Inventory" }];
   return (
-    <AppShell title="Inventory Management" nav={NAV}>
+    <AppShell title="Inventory Management" nav={nav}>
       {!loading && profile && profile.role !== "inventory" && profile.role !== "admin" ? (
         <p className="text-destructive">Access denied. Inventory or Admin only.</p>
       ) : (

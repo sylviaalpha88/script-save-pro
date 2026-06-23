@@ -12,8 +12,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Plus, Trash2, FileText } from "lucide-react";
 
-const NAV = [{ to: "/pharmacy", label: "Pharmacy" }];
-
 export const Route = createFileRoute("/pharmacy")({
   component: PharmacyPage,
 });
@@ -23,8 +21,12 @@ type LineItem = { drug_id: string; drug_name: string; unit_price: number; quanti
 
 function PharmacyPage() {
   const { profile, loading } = useAuth();
+  const nav = profile?.role === "admin"
+    ? [{ to: "/admin", label: "Dashboard" }, { to: "/pharmacy", label: "Pharmacy" }, { to: "/inventory", label: "Inventory" }]
+    : [{ to: "/pharmacy", label: "Pharmacy" }];
   return (
-    <AppShell title="Pharmacy – Sales" nav={NAV}>
+    <AppShell title="Pharmacy – Sales" nav={nav}>
+
       {!loading && profile && profile.role !== "pharmacy" && profile.role !== "admin" ? (
         <p className="text-destructive">Access denied.</p>
       ) : (
@@ -73,7 +75,7 @@ function DrugPicker({ drugs, onAdd }: { drugs: Drug[]; onAdd: (d: Drug, qty: num
                 <button type="button" key={d.id} onClick={() => { setSel(d); setQ(d.name); }}
                   className="w-full text-left px-3 py-2 hover:bg-accent text-sm flex justify-between">
                   <span>{d.name} <span className="text-muted-foreground">({d.unit})</span></span>
-                  <span className="text-muted-foreground">stock: {d.stock_quantity} · ${Number(d.selling_price).toFixed(2)}</span>
+                  <span className="text-muted-foreground">stock: {d.stock_quantity} · KSh {Number(d.selling_price).toFixed(2)}</span>
                 </button>
               ))}
             </div>
@@ -102,14 +104,14 @@ function LineItemsTable({ items, onRemove }: { items: LineItem[]; onRemove: (i: 
             <TableRow key={i}>
               <TableCell>{it.drug_name}</TableCell>
               <TableCell className="text-right">{it.quantity}</TableCell>
-              <TableCell className="text-right">${it.unit_price.toFixed(2)}</TableCell>
-              <TableCell className="text-right font-medium">${(it.unit_price * it.quantity).toFixed(2)}</TableCell>
+              <TableCell className="text-right">KSh {it.unit_price.toFixed(2)}</TableCell>
+              <TableCell className="text-right font-medium">KSh {(it.unit_price * it.quantity).toFixed(2)}</TableCell>
               <TableCell className="text-right"><Button size="sm" variant="ghost" onClick={() => onRemove(i)}><Trash2 className="h-4 w-4 text-destructive"/></Button></TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
-      <div className="flex justify-end p-3 bg-muted/40 font-bold text-lg">Total: ${total.toFixed(2)}</div>
+      <div className="flex justify-end p-3 bg-muted/40 font-bold text-lg">Total: KSh {total.toFixed(2)}</div>
     </div>
   );
 }
@@ -289,7 +291,7 @@ function DispensedPanel() {
                     <TableCell>{r.sales?.customer_name ?? "—"}</TableCell>
                     <TableCell className="font-medium">{r.drug_name} <span className="text-xs text-muted-foreground">({r.drugs?.unit})</span></TableCell>
                     <TableCell className="text-right">{r.quantity}</TableCell>
-                    <TableCell className="text-right">${Number(r.subtotal).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">KSh {Number(r.subtotal).toFixed(2)}</TableCell>
                     <TableCell className={`text-right font-medium ${low ? "text-destructive" : ""}`}>{stock}</TableCell>
                     <TableCell className="text-right">
                       <Button size="sm" variant="ghost" onClick={() => navigate({ to: "/invoice/$id", params: { id: r.sale_id } })}>
