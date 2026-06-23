@@ -145,29 +145,35 @@ export type Database = {
       }
       sales: {
         Row: {
+          amount_paid: number
           created_at: string
           created_by: string | null
           customer_name: string | null
           id: string
           patient_id: string | null
+          payment_method: string | null
           sale_type: Database["public"]["Enums"]["sale_type"]
           total: number
         }
         Insert: {
+          amount_paid?: number
           created_at?: string
           created_by?: string | null
           customer_name?: string | null
           id?: string
           patient_id?: string | null
+          payment_method?: string | null
           sale_type: Database["public"]["Enums"]["sale_type"]
           total?: number
         }
         Update: {
+          amount_paid?: number
           created_at?: string
           created_by?: string | null
           customer_name?: string | null
           id?: string
           patient_id?: string | null
+          payment_method?: string | null
           sale_type?: Database["public"]["Enums"]["sale_type"]
           total?: number
         }
