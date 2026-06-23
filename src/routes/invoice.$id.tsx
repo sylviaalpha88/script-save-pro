@@ -13,6 +13,7 @@ export const Route = createFileRoute("/invoice/$id")({
 type Sale = {
   id: string; sale_type: "retail" | "wholesale"; total: number;
   customer_name: string | null; created_at: string; patient_id: string | null;
+  amount_paid: number; payment_method: string | null;
 };
 type Item = { drug_name: string; quantity: number; unit_price: number; subtotal: number };
 type Patient = { name: string; age: number | null; patient_code: string | null };
