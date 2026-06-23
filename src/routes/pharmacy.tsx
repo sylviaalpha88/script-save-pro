@@ -217,3 +217,93 @@ function WholesaleForm() {
     </div>
   );
 }
+
+type DispRow = {
+  id: string;
+  created_at: string;
+  sale_id: string;
+  drug_name: string;
+  quantity: number;
+  unit_price: number;
+  subtotal: number;
+  drug_id: string;
+  sales: { sale_type: "retail" | "wholesale"; customer_name: string | null } | null;
+  drugs: { stock_quantity: number; min_stock: number; unit: string } | null;
+};
+
+function DispensedPanel() {
+  const [rows, setRows] = useState<DispRow[]>([]);
+  const [q, setQ] = useState("");
+  const navigate = useNavigate();
+
+  const load = async () => {
+    const { data, error } = await supabase
+      .from("sale_items")
+      .select("id, created_at, sale_id, drug_id, drug_name, quantity, unit_price, subtotal, sales(sale_type, customer_name), drugs(stock_quantity, min_stock, unit)")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) { toast.error(error.message); return; }
+    setRows((data as unknown as DispRow[]) ?? []);
+  };
+  useEffect(() => { load(); }, []);
+
+  const filtered = q.trim()
+    ? rows.filter(r =>
+        r.drug_name.toLowerCase().includes(q.toLowerCase()) ||
+        (r.sales?.customer_name ?? "").toLowerCase().includes(q.toLowerCase()))
+    : rows;
+
+  return (
+    <Card>
+      <CardContent className="p-5 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="font-semibold">Recently Dispensed Drugs</div>
+            <div className="text-xs text-muted-foreground">Stock is automatically removed when a sale is generated.</div>
+          </div>
+          <Input className="max-w-xs" placeholder="Search drug or customer…" value={q} onChange={e=>setQ(e.target.value)} />
+        </div>
+        <div className="border rounded-md overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Drug</TableHead>
+                <TableHead className="text-right">Qty</TableHead>
+                <TableHead className="text-right">Subtotal</TableHead>
+                <TableHead className="text-right">Stock Left</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">No dispenses yet</TableCell></TableRow>}
+              {filtered.map(r => {
+                const stock = r.drugs?.stock_quantity ?? 0;
+                const low = r.drugs ? stock < r.drugs.min_stock : false;
+                return (
+                  <TableRow key={r.id}>
+                    <TableCell className="whitespace-nowrap">{new Date(r.created_at).toLocaleString()}</TableCell>
+                    <TableCell className="capitalize">{r.sales?.sale_type ?? "—"}</TableCell>
+                    <TableCell>{r.sales?.customer_name ?? "—"}</TableCell>
+                    <TableCell className="font-medium">{r.drug_name} <span className="text-xs text-muted-foreground">({r.drugs?.unit})</span></TableCell>
+                    <TableCell className="text-right">{r.quantity}</TableCell>
+                    <TableCell className="text-right">${Number(r.subtotal).toFixed(2)}</TableCell>
+                    <TableCell className={`text-right font-medium ${low ? "text-destructive" : ""}`}>{stock}</TableCell>
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="ghost" onClick={() => navigate({ to: "/invoice/$id", params: { id: r.sale_id } })}>
+                        <FileText className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
