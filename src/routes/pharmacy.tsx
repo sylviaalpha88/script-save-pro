@@ -223,12 +223,19 @@ function WholesaleForm() {
   const navigate = useNavigate();
   const [customer, setCustomer] = useState("");
   const [items, setItems] = useState<LineItem[]>([]);
+  const [amountPaid, setAmountPaid] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
+
+  const total = items.reduce((a, b) => a + b.unit_price * b.quantity, 0);
 
   const submit = async () => {
     if (!customer || items.length === 0) { toast.error("Enter customer name and add drugs"); return; }
-    const total = items.reduce((a, b) => a + b.unit_price * b.quantity, 0);
     const { data: sale, error: sErr } = await supabase.from("sales").insert({
-      sale_type: "wholesale", customer_name: customer, total,
+      sale_type: "wholesale",
+      customer_name: customer,
+      total,
+      amount_paid: amountPaid ? Number(amountPaid) : 0,
+      payment_method: paymentMethod || null,
     }).select("id").single();
     if (sErr) { toast.error(sErr.message); return; }
 
@@ -256,6 +263,7 @@ function WholesaleForm() {
         <CardContent className="space-y-4">
           <DrugPicker drugs={drugs} onAdd={(d, qty) => setItems(prev => [...prev, { drug_id: d.id, drug_name: d.name, unit_price: Number(d.selling_price), quantity: qty }])} />
           <LineItemsTable items={items} onRemove={(i) => setItems(prev => prev.filter((_,idx)=>idx!==i))} />
+          <PaymentFields total={total} amountPaid={amountPaid} setAmountPaid={setAmountPaid} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} />
           <Button className="w-full" onClick={submit}><FileText className="h-4 w-4 mr-2"/>Generate Invoice</Button>
         </CardContent>
       </Card>
