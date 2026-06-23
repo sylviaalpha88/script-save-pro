@@ -24,6 +24,9 @@ type Drug = {
   unit: "tab" | "cap" | "piece";
   buying_price: number;
   selling_price: number;
+  selling_price_retail: number;
+  selling_price_wholesale: number;
+  wholesale_min_qty: number;
   stock_quantity: number;
   min_stock: number;
 };
@@ -88,13 +91,16 @@ function StockList() {
           <TableHeader>
             <TableRow>
               <TableHead>Drug</TableHead><TableHead>Unit</TableHead>
-              <TableHead>Buy Price</TableHead><TableHead>Sell Price</TableHead>
+              <TableHead>Buy</TableHead>
+              <TableHead>Retail Price</TableHead>
+              <TableHead>Wholesale Price</TableHead>
+              <TableHead>WS Min Qty</TableHead>
               <TableHead>Stock</TableHead><TableHead>Min</TableHead>
               <TableHead>Add Stock</TableHead><TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {drugs.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">No drugs yet. Add one in the next tab.</TableCell></TableRow>}
+            {drugs.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground">No drugs yet. Add one in the next tab.</TableCell></TableRow>}
             {drugs.map(d => {
               const low = d.stock_quantity < d.min_stock;
               const e = edit[d.id] ?? {};
@@ -107,8 +113,16 @@ function StockList() {
                       onChange={ev => setEdit(p => ({ ...p, [d.id]: { ...e, buying_price: Number(ev.target.value) } }))} />
                   </TableCell>
                   <TableCell>
-                    <Input type="number" step="0.01" className="w-24" defaultValue={d.selling_price}
-                      onChange={ev => setEdit(p => ({ ...p, [d.id]: { ...e, selling_price: Number(ev.target.value) } }))} />
+                    <Input type="number" step="0.01" className="w-24" defaultValue={d.selling_price_retail}
+                      onChange={ev => setEdit(p => ({ ...p, [d.id]: { ...e, selling_price_retail: Number(ev.target.value), selling_price: Number(ev.target.value) } }))} />
+                  </TableCell>
+                  <TableCell>
+                    <Input type="number" step="0.01" className="w-24" defaultValue={d.selling_price_wholesale}
+                      onChange={ev => setEdit(p => ({ ...p, [d.id]: { ...e, selling_price_wholesale: Number(ev.target.value) } }))} />
+                  </TableCell>
+                  <TableCell>
+                    <Input type="number" className="w-20" defaultValue={d.wholesale_min_qty}
+                      onChange={ev => setEdit(p => ({ ...p, [d.id]: { ...e, wholesale_min_qty: Number(ev.target.value) } }))} />
                   </TableCell>
                   <TableCell>
                     {low ? <Badge variant="destructive">{d.stock_quantity}</Badge> : <span className="font-medium">{d.stock_quantity}</span>}
