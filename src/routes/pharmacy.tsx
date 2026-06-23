@@ -293,7 +293,7 @@ function DispensedPanel() {
                     <TableCell>{r.sales?.customer_name ?? "—"}</TableCell>
                     <TableCell className="font-medium">{r.drug_name} <span className="text-xs text-muted-foreground">({r.drugs?.unit})</span></TableCell>
                     <TableCell className="text-right">{r.quantity}</TableCell>
-                    <TableCell className="text-right">${Number(r.subtotal).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">KSh {Number(r.subtotal).toFixed(2)}</TableCell>
                     <TableCell className={`text-right font-medium ${low ? "text-destructive" : ""}`}>{stock}</TableCell>
                     <TableCell className="text-right">
                       <Button size="sm" variant="ghost" onClick={() => navigate({ to: "/invoice/$id", params: { id: r.sale_id } })}>

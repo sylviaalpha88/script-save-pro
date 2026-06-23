@@ -14,7 +14,11 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Package } from "lucide-react";
 
-const NAV = [{ to: "/inventory", label: "Inventory" }];
+const NAV = [
+  { to: "/inventory", label: "Inventory" },
+  { to: "/pharmacy", label: "Pharmacy" },
+  { to: "/admin", label: "Admin" },
+];
 
 export const Route = createFileRoute("/inventory")({
   component: InventoryPage,
