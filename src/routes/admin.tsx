@@ -1,0 +1,284 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth-context";
+import { AppShell } from "@/components/AppShell";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { createStaffUser, deleteStaffUser } from "@/lib/admin.functions";
+import { Trash2, Users, DollarSign, ShoppingCart, TrendingUp } from "lucide-react";
+
+const ADMIN_NAV = [
+  { to: "/admin", label: "Dashboard" },
+];
+
+export const Route = createFileRoute("/admin")({
+  component: AdminPage,
+});
+
+type Profile = { id: string; username: string; role: string; created_at: string };
+type SaleRow = {
+  id: string;
+  sale_type: "retail" | "wholesale";
+  total: number;
+  created_at: string;
+  customer_name: string | null;
+  patient_id: string | null;
+};
+
+function AdminPage() {
+  const { profile, loading } = useAuth();
+  return (
+    <AppShell title="Admin Dashboard" nav={ADMIN_NAV}>
+      {!loading && profile?.role !== "admin" ? (
+        <p className="text-destructive">Access denied. Admin only.</p>
+      ) : (
+        <Tabs defaultValue="sales" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="sales">Sales Overview</TabsTrigger>
+            <TabsTrigger value="history">Per-Item History</TabsTrigger>
+            <TabsTrigger value="users">Manage Users</TabsTrigger>
+          </TabsList>
+          <TabsContent value="sales"><SalesPanel /></TabsContent>
+          <TabsContent value="history"><PerItemHistory /></TabsContent>
+          <TabsContent value="users"><UsersPanel /></TabsContent>
+        </Tabs>
+      )}
+    </AppShell>
+  );
+}
+
+function todayISO(offset = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return d.toISOString().slice(0, 10);
+}
+
+function SalesPanel() {
+  const [from, setFrom] = useState(todayISO(-30));
+  const [to, setTo] = useState(todayISO());
+  const [rows, setRows] = useState<SaleRow[]>([]);
+
+  const load = async () => {
+    const { data, error } = await supabase
+      .from("sales")
+      .select("id, sale_type, total, created_at, customer_name, patient_id")
+      .gte("created_at", `${from}T00:00:00`)
+      .lte("created_at", `${to}T23:59:59`)
+      .order("created_at", { ascending: false });
+    if (error) { toast.error(error.message); return; }
+    setRows((data as SaleRow[]) ?? []);
+  };
+
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+
+  const retail = rows.filter(r => r.sale_type === "retail");
+  const whole = rows.filter(r => r.sale_type === "wholesale");
+  const sum = (arr: SaleRow[]) => arr.reduce((a, b) => a + Number(b.total), 0);
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader><CardTitle>Filter</CardTitle></CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap items-end gap-3">
+            <div><Label>From</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
+            <div><Label>To</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
+            <Button onClick={load}>Apply</Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid sm:grid-cols-3 gap-4">
+        <StatCard icon={<ShoppingCart className="h-5 w-5"/>} label="Retail Sales" value={`$${sum(retail).toFixed(2)}`} sub={`${retail.length} transactions`} />
+        <StatCard icon={<TrendingUp className="h-5 w-5"/>} label="Wholesale Sales" value={`$${sum(whole).toFixed(2)}`} sub={`${whole.length} transactions`} />
+        <StatCard icon={<DollarSign className="h-5 w-5"/>} label="Total" value={`$${sum(rows).toFixed(2)}`} sub={`${rows.length} transactions`} />
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <SalesTable title="Retail" rows={retail} />
+        <SalesTable title="Wholesale" rows={whole} />
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub: string }) {
+  return (
+    <Card>
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm text-muted-foreground">{label}</div>
+            <div className="text-2xl font-bold mt-1">{value}</div>
+            <div className="text-xs text-muted-foreground mt-1">{sub}</div>
+          </div>
+          <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">{icon}</div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function SalesTable({ title, rows }: { title: string; rows: SaleRow[] }) {
+  return (
+    <Card>
+      <CardHeader><CardTitle>{title} Sales</CardTitle></CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Customer</TableHead><TableHead className="text-right">Total</TableHead></TableRow></TableHeader>
+          <TableBody>
+            {rows.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">No sales</TableCell></TableRow>}
+            {rows.map(r => (
+              <TableRow key={r.id}>
+                <TableCell>{new Date(r.created_at).toLocaleString()}</TableCell>
+                <TableCell>{r.customer_name ?? "—"}</TableCell>
+                <TableCell className="text-right font-medium">${Number(r.total).toFixed(2)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+type ItemAgg = { drug_name: string; day: string; quantity: number; revenue: number };
+
+function PerItemHistory() {
+  const [from, setFrom] = useState(todayISO(-7));
+  const [to, setTo] = useState(todayISO());
+  const [rows, setRows] = useState<ItemAgg[]>([]);
+
+  const load = async () => {
+    const { data, error } = await supabase
+      .from("sale_items")
+      .select("drug_name, quantity, subtotal, created_at")
+      .gte("created_at", `${from}T00:00:00`)
+      .lte("created_at", `${to}T23:59:59`);
+    if (error) { toast.error(error.message); return; }
+    const map = new Map<string, ItemAgg>();
+    (data ?? []).forEach((r: any) => {
+      const day = String(r.created_at).slice(0, 10);
+      const key = `${day}__${r.drug_name}`;
+      const ex = map.get(key) ?? { day, drug_name: r.drug_name, quantity: 0, revenue: 0 };
+      ex.quantity += Number(r.quantity);
+      ex.revenue += Number(r.subtotal);
+      map.set(key, ex);
+    });
+    setRows([...map.values()].sort((a, b) => (a.day < b.day ? 1 : -1)));
+  };
+
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>Total Sales Per Item Per Day</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <div><Label>From</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
+          <div><Label>To</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
+          <Button onClick={load}>Apply</Button>
+        </div>
+        <Table>
+          <TableHeader><TableRow><TableHead>Day</TableHead><TableHead>Drug</TableHead><TableHead className="text-right">Qty</TableHead><TableHead className="text-right">Revenue</TableHead></TableRow></TableHeader>
+          <TableBody>
+            {rows.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No data</TableCell></TableRow>}
+            {rows.map((r, i) => (
+              <TableRow key={i}>
+                <TableCell>{r.day}</TableCell>
+                <TableCell>{r.drug_name}</TableCell>
+                <TableCell className="text-right">{r.quantity}</TableCell>
+                <TableCell className="text-right">${r.revenue.toFixed(2)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+function UsersPanel() {
+  const [users, setUsers] = useState<Profile[]>([]);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"pharmacy" | "inventory">("pharmacy");
+  const create = useServerFn(createStaffUser);
+  const del = useServerFn(deleteStaffUser);
+
+  const load = async () => {
+    const { data } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+    setUsers((data as Profile[]) ?? []);
+  };
+  useEffect(() => { load(); }, []);
+
+  const onCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await create({ data: { username, password, role } });
+      toast.success("User created");
+      setUsername(""); setPassword("");
+      await load();
+    } catch (err) { toast.error((err as Error).message); }
+  };
+
+  return (
+    <div className="grid md:grid-cols-2 gap-6">
+      <Card>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Users className="h-5 w-5"/>Add Staff</CardTitle></CardHeader>
+        <CardContent>
+          <form onSubmit={onCreate} className="space-y-3">
+            <div><Label>Username</Label><Input value={username} onChange={e => setUsername(e.target.value)} required /></div>
+            <div><Label>Password</Label><Input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6}/></div>
+            <div>
+              <Label>Role</Label>
+              <Select value={role} onValueChange={(v) => setRole(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pharmacy">Pharmacy</SelectItem>
+                  <SelectItem value="inventory">Inventory</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button type="submit" className="w-full">Create user</Button>
+          </form>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader><CardTitle>All Users</CardTitle></CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader><TableRow><TableHead>Username</TableHead><TableHead>Role</TableHead><TableHead></TableHead></TableRow></TableHeader>
+            <TableBody>
+              {users.map(u => (
+                <TableRow key={u.id}>
+                  <TableCell className="font-medium">{u.username}</TableCell>
+                  <TableCell className="capitalize">{u.role}</TableCell>
+                  <TableCell className="text-right">
+                    {u.role !== "admin" && (
+                      <Button size="sm" variant="ghost" onClick={async () => {
+                        if (!confirm(`Delete ${u.username}?`)) return;
+                        try { await del({ data: { userId: u.id } }); toast.success("Deleted"); await load(); }
+                        catch (e) { toast.error((e as Error).message); }
+                      }}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
