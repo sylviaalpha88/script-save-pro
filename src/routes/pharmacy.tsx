@@ -188,7 +188,7 @@ function RetailForm() {
       <Card>
         <CardHeader><CardTitle>Prescribed Drugs</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <DrugPicker drugs={drugs} onAdd={(d, qty) => setItems(prev => [...prev, { drug_id: d.id, drug_name: d.name, unit_price: Number(d.selling_price), quantity: qty }])} />
+          <DrugPicker drugs={drugs} mode="retail" onAdd={(d, qty, unit_price) => setItems(prev => [...prev, { drug_id: d.id, drug_name: d.name, unit_price, quantity: qty }])} />
           <LineItemsTable items={items} onRemove={(i) => setItems(prev => prev.filter((_,idx)=>idx!==i))} />
           <PaymentFields total={total} amountPaid={amountPaid} setAmountPaid={setAmountPaid} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} />
           <Button className="w-full" onClick={submit}><FileText className="h-4 w-4 mr-2"/>Generate Invoice</Button>
@@ -272,7 +272,7 @@ function WholesaleForm() {
       <Card>
         <CardHeader><CardTitle>Add Drugs in Bulk</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <DrugPicker drugs={drugs} onAdd={(d, qty) => setItems(prev => [...prev, { drug_id: d.id, drug_name: d.name, unit_price: Number(d.selling_price), quantity: qty }])} />
+          <DrugPicker drugs={drugs} mode="wholesale" onAdd={(d, qty, unit_price) => setItems(prev => [...prev, { drug_id: d.id, drug_name: d.name, unit_price, quantity: qty }])} />
           <LineItemsTable items={items} onRemove={(i) => setItems(prev => prev.filter((_,idx)=>idx!==i))} />
           <PaymentFields total={total} amountPaid={amountPaid} setAmountPaid={setAmountPaid} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} />
           <Button className="w-full" onClick={submit}><FileText className="h-4 w-4 mr-2"/>Generate Invoice</Button>
