@@ -22,9 +22,12 @@ export type Database = {
           min_stock: number
           name: string
           selling_price: number
+          selling_price_retail: number
+          selling_price_wholesale: number
           stock_quantity: number
           unit: Database["public"]["Enums"]["drug_unit"]
           updated_at: string
+          wholesale_min_qty: number
         }
         Insert: {
           buying_price?: number
@@ -33,9 +36,12 @@ export type Database = {
           min_stock?: number
           name: string
           selling_price?: number
+          selling_price_retail?: number
+          selling_price_wholesale?: number
           stock_quantity?: number
           unit?: Database["public"]["Enums"]["drug_unit"]
           updated_at?: string
+          wholesale_min_qty?: number
         }
         Update: {
           buying_price?: number
@@ -44,9 +50,12 @@ export type Database = {
           min_stock?: number
           name?: string
           selling_price?: number
+          selling_price_retail?: number
+          selling_price_wholesale?: number
           stock_quantity?: number
           unit?: Database["public"]["Enums"]["drug_unit"]
           updated_at?: string
+          wholesale_min_qty?: number
         }
         Relationships: []
       }

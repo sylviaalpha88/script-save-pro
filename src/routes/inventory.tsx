@@ -24,6 +24,9 @@ type Drug = {
   unit: "tab" | "cap" | "piece";
   buying_price: number;
   selling_price: number;
+  selling_price_retail: number;
+  selling_price_wholesale: number;
+  wholesale_min_qty: number;
   stock_quantity: number;
   min_stock: number;
 };
@@ -88,13 +91,16 @@ function StockList() {
           <TableHeader>
             <TableRow>
               <TableHead>Drug</TableHead><TableHead>Unit</TableHead>
-              <TableHead>Buy Price</TableHead><TableHead>Sell Price</TableHead>
+              <TableHead>Buy</TableHead>
+              <TableHead>Retail Price</TableHead>
+              <TableHead>Wholesale Price</TableHead>
+              <TableHead>WS Min Qty</TableHead>
               <TableHead>Stock</TableHead><TableHead>Min</TableHead>
               <TableHead>Add Stock</TableHead><TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {drugs.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">No drugs yet. Add one in the next tab.</TableCell></TableRow>}
+            {drugs.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground">No drugs yet. Add one in the next tab.</TableCell></TableRow>}
             {drugs.map(d => {
               const low = d.stock_quantity < d.min_stock;
               const e = edit[d.id] ?? {};
@@ -107,8 +113,16 @@ function StockList() {
                       onChange={ev => setEdit(p => ({ ...p, [d.id]: { ...e, buying_price: Number(ev.target.value) } }))} />
                   </TableCell>
                   <TableCell>
-                    <Input type="number" step="0.01" className="w-24" defaultValue={d.selling_price}
-                      onChange={ev => setEdit(p => ({ ...p, [d.id]: { ...e, selling_price: Number(ev.target.value) } }))} />
+                    <Input type="number" step="0.01" className="w-24" defaultValue={d.selling_price_retail}
+                      onChange={ev => setEdit(p => ({ ...p, [d.id]: { ...e, selling_price_retail: Number(ev.target.value), selling_price: Number(ev.target.value) } }))} />
+                  </TableCell>
+                  <TableCell>
+                    <Input type="number" step="0.01" className="w-24" defaultValue={d.selling_price_wholesale}
+                      onChange={ev => setEdit(p => ({ ...p, [d.id]: { ...e, selling_price_wholesale: Number(ev.target.value) } }))} />
+                  </TableCell>
+                  <TableCell>
+                    <Input type="number" className="w-20" defaultValue={d.wholesale_min_qty}
+                      onChange={ev => setEdit(p => ({ ...p, [d.id]: { ...e, wholesale_min_qty: Number(ev.target.value) } }))} />
                   </TableCell>
                   <TableCell>
                     {low ? <Badge variant="destructive">{d.stock_quantity}</Badge> : <span className="font-medium">{d.stock_quantity}</span>}
@@ -149,20 +163,28 @@ function AddDrug({ onAdded }: { onAdded: () => void }) {
   const [name, setName] = useState("");
   const [unit, setUnit] = useState<"tab" | "cap" | "piece">("tab");
   const [buying, setBuying] = useState("");
-  const [selling, setSelling] = useState("");
+  const [retail, setRetail] = useState("");
+  const [wholesale, setWholesale] = useState("");
+  const [wsMin, setWsMin] = useState("10");
   const [stock, setStock] = useState("");
   const [min, setMin] = useState("10");
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const retailNum = Number(retail);
     const { error } = await supabase.from("drugs").insert({
       name, unit,
-      buying_price: Number(buying), selling_price: Number(selling),
-      stock_quantity: Number(stock || 0), min_stock: Number(min || 10),
+      buying_price: Number(buying),
+      selling_price: retailNum,
+      selling_price_retail: retailNum,
+      selling_price_wholesale: Number(wholesale),
+      wholesale_min_qty: Number(wsMin || 10),
+      stock_quantity: Number(stock || 0),
+      min_stock: Number(min || 10),
     });
     if (error) { toast.error(error.message); return; }
     toast.success("Drug added");
-    setName(""); setBuying(""); setSelling(""); setStock(""); setMin("10");
+    setName(""); setBuying(""); setRetail(""); setWholesale(""); setWsMin("10"); setStock(""); setMin("10");
     onAdded();
   };
 
@@ -185,7 +207,9 @@ function AddDrug({ onAdded }: { onAdded: () => void }) {
           </div>
           <div><Label>Initial stock quantity</Label><Input type="number" value={stock} onChange={e=>setStock(e.target.value)} /></div>
           <div><Label>Buying price (per {unit})</Label><Input type="number" step="0.01" value={buying} onChange={e=>setBuying(e.target.value)} required /></div>
-          <div><Label>Selling price (per {unit})</Label><Input type="number" step="0.01" value={selling} onChange={e=>setSelling(e.target.value)} required /></div>
+          <div><Label>Retail selling price (per {unit})</Label><Input type="number" step="0.01" value={retail} onChange={e=>setRetail(e.target.value)} required /></div>
+          <div><Label>Wholesale selling price (per {unit})</Label><Input type="number" step="0.01" value={wholesale} onChange={e=>setWholesale(e.target.value)} required /></div>
+          <div><Label>Min quantity to qualify as wholesale</Label><Input type="number" value={wsMin} onChange={e=>setWsMin(e.target.value)} /></div>
           <div><Label>Minimum stock alert</Label><Input type="number" value={min} onChange={e=>setMin(e.target.value)} /></div>
           <div className="sm:col-span-2"><Button type="submit" className="w-full">Save Drug</Button></div>
         </form>

@@ -16,7 +16,7 @@ export const Route = createFileRoute("/pharmacy")({
   component: PharmacyPage,
 });
 
-type Drug = { id: string; name: string; unit: string; selling_price: number; stock_quantity: number };
+type Drug = { id: string; name: string; unit: string; selling_price: number; selling_price_retail: number; selling_price_wholesale: number; wholesale_min_qty: number; stock_quantity: number };
 type LineItem = { drug_id: string; drug_name: string; unit_price: number; quantity: number };
 
 function PharmacyPage() {
@@ -49,13 +49,15 @@ function PharmacyPage() {
 function useDrugs() {
   const [drugs, setDrugs] = useState<Drug[]>([]);
   useEffect(() => {
-    supabase.from("drugs").select("id,name,unit,selling_price,stock_quantity").order("name")
+    supabase.from("drugs").select("id,name,unit,selling_price,selling_price_retail,selling_price_wholesale,wholesale_min_qty,stock_quantity").order("name")
       .then(({ data }) => setDrugs((data as Drug[]) ?? []));
   }, []);
   return drugs;
 }
 
-function DrugPicker({ drugs, onAdd }: { drugs: Drug[]; onAdd: (d: Drug, qty: number) => void }) {
+type SaleMode = "retail" | "wholesale";
+
+function DrugPicker({ drugs, mode, onAdd }: { drugs: Drug[]; mode: SaleMode; onAdd: (d: Drug, qty: number, unitPrice: number) => void }) {
   const [q, setQ] = useState("");
   const [sel, setSel] = useState<Drug | null>(null);
   const [qty, setQty] = useState("1");
@@ -63,6 +65,8 @@ function DrugPicker({ drugs, onAdd }: { drugs: Drug[]; onAdd: (d: Drug, qty: num
   const filtered = useMemo(() =>
     q.trim() ? drugs.filter(d => d.name.toLowerCase().includes(q.toLowerCase())).slice(0, 8) : []
   , [drugs, q]);
+
+  const priceOf = (d: Drug) => mode === "wholesale" ? Number(d.selling_price_wholesale) : Number(d.selling_price_retail);
 
   return (
     <div className="space-y-2">
@@ -75,7 +79,7 @@ function DrugPicker({ drugs, onAdd }: { drugs: Drug[]; onAdd: (d: Drug, qty: num
                 <button type="button" key={d.id} onClick={() => { setSel(d); setQ(d.name); }}
                   className="w-full text-left px-3 py-2 hover:bg-accent text-sm flex justify-between">
                   <span>{d.name} <span className="text-muted-foreground">({d.unit})</span></span>
-                  <span className="text-muted-foreground">stock: {d.stock_quantity} · KSh {Number(d.selling_price).toFixed(2)}</span>
+                  <span className="text-muted-foreground">stock: {d.stock_quantity} · KSh {priceOf(d).toFixed(2)}{mode === "wholesale" ? ` · min ${d.wholesale_min_qty}` : ""}</span>
                 </button>
               ))}
             </div>
@@ -85,9 +89,16 @@ function DrugPicker({ drugs, onAdd }: { drugs: Drug[]; onAdd: (d: Drug, qty: num
         <Button type="button" disabled={!sel} onClick={() => {
           if (!sel) return;
           const n = Math.max(1, Number(qty) || 1);
-          onAdd(sel, n); setSel(null); setQ(""); setQty("1");
+          if (mode === "wholesale" && n < sel.wholesale_min_qty) {
+            toast.error(`Wholesale requires at least ${sel.wholesale_min_qty} ${sel.unit}s of ${sel.name}`);
+            return;
+          }
+          onAdd(sel, n, priceOf(sel)); setSel(null); setQ(""); setQty("1");
         }}><Plus className="h-4 w-4 mr-1"/>Add</Button>
       </div>
+      {sel && mode === "wholesale" && (
+        <p className="text-xs text-muted-foreground">Wholesale min for {sel.name}: {sel.wholesale_min_qty} {sel.unit}s @ KSh {priceOf(sel).toFixed(2)}</p>
+      )}
     </div>
   );
 }
@@ -177,7 +188,7 @@ function RetailForm() {
       <Card>
         <CardHeader><CardTitle>Prescribed Drugs</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <DrugPicker drugs={drugs} onAdd={(d, qty) => setItems(prev => [...prev, { drug_id: d.id, drug_name: d.name, unit_price: Number(d.selling_price), quantity: qty }])} />
+          <DrugPicker drugs={drugs} mode="retail" onAdd={(d, qty, unit_price) => setItems(prev => [...prev, { drug_id: d.id, drug_name: d.name, unit_price, quantity: qty }])} />
           <LineItemsTable items={items} onRemove={(i) => setItems(prev => prev.filter((_,idx)=>idx!==i))} />
           <PaymentFields total={total} amountPaid={amountPaid} setAmountPaid={setAmountPaid} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} />
           <Button className="w-full" onClick={submit}><FileText className="h-4 w-4 mr-2"/>Generate Invoice</Button>
@@ -261,7 +272,7 @@ function WholesaleForm() {
       <Card>
         <CardHeader><CardTitle>Add Drugs in Bulk</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <DrugPicker drugs={drugs} onAdd={(d, qty) => setItems(prev => [...prev, { drug_id: d.id, drug_name: d.name, unit_price: Number(d.selling_price), quantity: qty }])} />
+          <DrugPicker drugs={drugs} mode="wholesale" onAdd={(d, qty, unit_price) => setItems(prev => [...prev, { drug_id: d.id, drug_name: d.name, unit_price, quantity: qty }])} />
           <LineItemsTable items={items} onRemove={(i) => setItems(prev => prev.filter((_,idx)=>idx!==i))} />
           <PaymentFields total={total} amountPaid={amountPaid} setAmountPaid={setAmountPaid} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} />
           <Button className="w-full" onClick={submit}><FileText className="h-4 w-4 mr-2"/>Generate Invoice</Button>
