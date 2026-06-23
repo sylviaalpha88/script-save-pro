@@ -12,12 +12,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Plus, Trash2, FileText } from "lucide-react";
 
-const NAV = [
-  { to: "/pharmacy", label: "Pharmacy" },
-  { to: "/inventory", label: "Inventory" },
-  { to: "/admin", label: "Admin" },
-];
-
 export const Route = createFileRoute("/pharmacy")({
   component: PharmacyPage,
 });
@@ -27,8 +21,12 @@ type LineItem = { drug_id: string; drug_name: string; unit_price: number; quanti
 
 function PharmacyPage() {
   const { profile, loading } = useAuth();
+  const nav = profile?.role === "admin"
+    ? [{ to: "/admin", label: "Dashboard" }, { to: "/pharmacy", label: "Pharmacy" }, { to: "/inventory", label: "Inventory" }]
+    : [{ to: "/pharmacy", label: "Pharmacy" }];
   return (
-    <AppShell title="Pharmacy – Sales" nav={NAV}>
+    <AppShell title="Pharmacy – Sales" nav={nav}>
+
       {!loading && profile && profile.role !== "pharmacy" && profile.role !== "admin" ? (
         <p className="text-destructive">Access denied.</p>
       ) : (
