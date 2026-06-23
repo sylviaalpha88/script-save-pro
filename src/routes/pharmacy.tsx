@@ -113,7 +113,7 @@ function LineItemsTable({ items, onRemove }: { items: LineItem[]; onRemove: (i: 
           ))}
         </TableBody>
       </Table>
-      <div className="flex justify-end p-3 bg-muted/40 font-bold text-lg">Total: ${total.toFixed(2)}</div>
+      <div className="flex justify-end p-3 bg-muted/40 font-bold text-lg">Total: KSh {total.toFixed(2)}</div>
     </div>
   );
 }
