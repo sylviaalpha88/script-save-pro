@@ -32,10 +32,13 @@ function PharmacyPage() {
           <TabsList>
             <TabsTrigger value="retail">Retail (Patients)</TabsTrigger>
             <TabsTrigger value="wholesale">Wholesale</TabsTrigger>
+            <TabsTrigger value="dispensed">Dispensed</TabsTrigger>
           </TabsList>
           <TabsContent value="retail"><RetailForm /></TabsContent>
           <TabsContent value="wholesale"><WholesaleForm /></TabsContent>
+          <TabsContent value="dispensed"><DispensedPanel /></TabsContent>
         </Tabs>
+
       )}
     </AppShell>
   );
