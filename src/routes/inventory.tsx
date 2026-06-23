@@ -163,20 +163,28 @@ function AddDrug({ onAdded }: { onAdded: () => void }) {
   const [name, setName] = useState("");
   const [unit, setUnit] = useState<"tab" | "cap" | "piece">("tab");
   const [buying, setBuying] = useState("");
-  const [selling, setSelling] = useState("");
+  const [retail, setRetail] = useState("");
+  const [wholesale, setWholesale] = useState("");
+  const [wsMin, setWsMin] = useState("10");
   const [stock, setStock] = useState("");
   const [min, setMin] = useState("10");
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const retailNum = Number(retail);
     const { error } = await supabase.from("drugs").insert({
       name, unit,
-      buying_price: Number(buying), selling_price: Number(selling),
-      stock_quantity: Number(stock || 0), min_stock: Number(min || 10),
+      buying_price: Number(buying),
+      selling_price: retailNum,
+      selling_price_retail: retailNum,
+      selling_price_wholesale: Number(wholesale),
+      wholesale_min_qty: Number(wsMin || 10),
+      stock_quantity: Number(stock || 0),
+      min_stock: Number(min || 10),
     });
     if (error) { toast.error(error.message); return; }
     toast.success("Drug added");
-    setName(""); setBuying(""); setSelling(""); setStock(""); setMin("10");
+    setName(""); setBuying(""); setRetail(""); setWholesale(""); setWsMin("10"); setStock(""); setMin("10");
     onAdded();
   };
 
@@ -199,7 +207,9 @@ function AddDrug({ onAdded }: { onAdded: () => void }) {
           </div>
           <div><Label>Initial stock quantity</Label><Input type="number" value={stock} onChange={e=>setStock(e.target.value)} /></div>
           <div><Label>Buying price (per {unit})</Label><Input type="number" step="0.01" value={buying} onChange={e=>setBuying(e.target.value)} required /></div>
-          <div><Label>Selling price (per {unit})</Label><Input type="number" step="0.01" value={selling} onChange={e=>setSelling(e.target.value)} required /></div>
+          <div><Label>Retail selling price (per {unit})</Label><Input type="number" step="0.01" value={retail} onChange={e=>setRetail(e.target.value)} required /></div>
+          <div><Label>Wholesale selling price (per {unit})</Label><Input type="number" step="0.01" value={wholesale} onChange={e=>setWholesale(e.target.value)} required /></div>
+          <div><Label>Min quantity to qualify as wholesale</Label><Input type="number" value={wsMin} onChange={e=>setWsMin(e.target.value)} /></div>
           <div><Label>Minimum stock alert</Label><Input type="number" value={min} onChange={e=>setMin(e.target.value)} /></div>
           <div className="sm:col-span-2"><Button type="submit" className="w-full">Save Drug</Button></div>
         </form>
