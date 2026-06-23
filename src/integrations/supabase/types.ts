@@ -14,16 +14,194 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      drugs: {
+        Row: {
+          buying_price: number
+          created_at: string
+          id: string
+          min_stock: number
+          name: string
+          selling_price: number
+          stock_quantity: number
+          unit: Database["public"]["Enums"]["drug_unit"]
+          updated_at: string
+        }
+        Insert: {
+          buying_price?: number
+          created_at?: string
+          id?: string
+          min_stock?: number
+          name: string
+          selling_price?: number
+          stock_quantity?: number
+          unit?: Database["public"]["Enums"]["drug_unit"]
+          updated_at?: string
+        }
+        Update: {
+          buying_price?: number
+          created_at?: string
+          id?: string
+          min_stock?: number
+          name?: string
+          selling_price?: number
+          stock_quantity?: number
+          unit?: Database["public"]["Enums"]["drug_unit"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      patients: {
+        Row: {
+          age: number | null
+          created_at: string
+          id: string
+          name: string
+          patient_code: string | null
+        }
+        Insert: {
+          age?: number | null
+          created_at?: string
+          id?: string
+          name: string
+          patient_code?: string | null
+        }
+        Update: {
+          age?: number | null
+          created_at?: string
+          id?: string
+          name?: string
+          patient_code?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          username: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          username?: string
+        }
+        Relationships: []
+      }
+      sale_items: {
+        Row: {
+          created_at: string
+          drug_id: string
+          drug_name: string
+          id: string
+          quantity: number
+          sale_id: string
+          subtotal: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          drug_id: string
+          drug_name: string
+          id?: string
+          quantity: number
+          sale_id: string
+          subtotal: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          drug_id?: string
+          drug_name?: string
+          id?: string
+          quantity?: number
+          sale_id?: string
+          subtotal?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_items_drug_id_fkey"
+            columns: ["drug_id"]
+            isOneToOne: false
+            referencedRelation: "drugs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_items_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          customer_name: string | null
+          id: string
+          patient_id: string | null
+          sale_type: Database["public"]["Enums"]["sale_type"]
+          total: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          customer_name?: string | null
+          id?: string
+          patient_id?: string | null
+          sale_type: Database["public"]["Enums"]["sale_type"]
+          total?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          customer_name?: string | null
+          id?: string
+          patient_id?: string | null
+          sale_type?: Database["public"]["Enums"]["sale_type"]
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      current_role_name: {
+        Args: never
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "pharmacy" | "inventory"
+      drug_unit: "tab" | "cap" | "piece"
+      sale_type: "retail" | "wholesale"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +328,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "pharmacy", "inventory"],
+      drug_unit: ["tab", "cap", "piece"],
+      sale_type: ["retail", "wholesale"],
+    },
   },
 } as const
