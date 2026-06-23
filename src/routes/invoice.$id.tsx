@@ -13,6 +13,7 @@ export const Route = createFileRoute("/invoice/$id")({
 type Sale = {
   id: string; sale_type: "retail" | "wholesale"; total: number;
   customer_name: string | null; created_at: string; patient_id: string | null;
+  amount_paid: number; payment_method: string | null;
 };
 type Item = { drug_name: string; quantity: number; unit_price: number; subtotal: number };
 type Patient = { name: string; age: number | null; patient_code: string | null };
@@ -102,8 +103,25 @@ function InvoicePage() {
                   <td colSpan={3} className="pt-4 text-right font-semibold">Total</td>
                   <td className="pt-4 text-right text-xl font-bold">KSh {Number(sale.total).toFixed(2)}</td>
                 </tr>
+                {Number(sale.amount_paid) > 0 && (
+                  <>
+                    <tr>
+                      <td colSpan={3} className="pt-2 text-right text-sm">Amount Paid {sale.payment_method ? `(${sale.payment_method})` : ""}</td>
+                      <td className="pt-2 text-right text-sm">KSh {Number(sale.amount_paid).toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                      <td colSpan={3} className="pt-1 text-right text-sm font-semibold">
+                        {Number(sale.amount_paid) >= Number(sale.total) ? "Change" : "Balance Due"}
+                      </td>
+                      <td className={`pt-1 text-right text-sm font-semibold ${Number(sale.amount_paid) >= Number(sale.total) ? "text-primary" : "text-destructive"}`}>
+                        KSh {Math.abs(Number(sale.total) - Number(sale.amount_paid)).toFixed(2)}
+                      </td>
+                    </tr>
+                  </>
+                )}
               </tfoot>
             </table>
+
 
             <div className="mt-10 text-center text-xs text-muted-foreground">
               Thank you for choosing LEMSA Pharmacy.

@@ -124,18 +124,29 @@ function RetailForm() {
   const [pcode, setPcode] = useState("");
   const [items, setItems] = useState<LineItem[]>([]);
   const [prescription, setPrescription] = useState("");
+  const [amountPaid, setAmountPaid] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
+
+  const total = items.reduce((a, b) => a + b.unit_price * b.quantity, 0);
 
   const submit = async () => {
-    if (!name || items.length === 0) { toast.error("Enter patient name and add drugs"); return; }
-    // create patient
-    const { data: pat, error: pErr } = await supabase.from("patients").insert({
-      name, age: age ? Number(age) : null, patient_code: pcode || null,
-    }).select("id").single();
-    if (pErr) { toast.error(pErr.message); return; }
+    if (items.length === 0) { toast.error("Add at least one drug"); return; }
+    let patientId: string | null = null;
+    if (name.trim()) {
+      const { data: pat, error: pErr } = await supabase.from("patients").insert({
+        name: name.trim(), age: age ? Number(age) : null, patient_code: pcode || null,
+      }).select("id").single();
+      if (pErr) { toast.error(pErr.message); return; }
+      patientId = pat.id;
+    }
 
-    const total = items.reduce((a, b) => a + b.unit_price * b.quantity, 0);
     const { data: sale, error: sErr } = await supabase.from("sales").insert({
-      sale_type: "retail", patient_id: pat.id, customer_name: name, total,
+      sale_type: "retail",
+      patient_id: patientId,
+      customer_name: name.trim() || null,
+      total,
+      amount_paid: amountPaid ? Number(amountPaid) : 0,
+      payment_method: paymentMethod || null,
     }).select("id").single();
     if (sErr) { toast.error(sErr.message); return; }
 
@@ -153,9 +164,9 @@ function RetailForm() {
   return (
     <div className="grid lg:grid-cols-2 gap-6">
       <Card>
-        <CardHeader><CardTitle>Patient Info</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Patient Info <span className="text-xs font-normal text-muted-foreground">(optional)</span></CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <div><Label>Name</Label><Input value={name} onChange={e=>setName(e.target.value)} required /></div>
+          <div><Label>Name (optional)</Label><Input value={name} onChange={e=>setName(e.target.value)} placeholder="leave blank for walk-in" /></div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Age</Label><Input type="number" value={age} onChange={e=>setAge(e.target.value)} /></div>
             <div><Label>Patient ID</Label><Input value={pcode} onChange={e=>setPcode(e.target.value)} /></div>
@@ -168,9 +179,41 @@ function RetailForm() {
         <CardContent className="space-y-4">
           <DrugPicker drugs={drugs} onAdd={(d, qty) => setItems(prev => [...prev, { drug_id: d.id, drug_name: d.name, unit_price: Number(d.selling_price), quantity: qty }])} />
           <LineItemsTable items={items} onRemove={(i) => setItems(prev => prev.filter((_,idx)=>idx!==i))} />
+          <PaymentFields total={total} amountPaid={amountPaid} setAmountPaid={setAmountPaid} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} />
           <Button className="w-full" onClick={submit}><FileText className="h-4 w-4 mr-2"/>Generate Invoice</Button>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function PaymentFields({ total, amountPaid, setAmountPaid, paymentMethod, setPaymentMethod }: {
+  total: number; amountPaid: string; setAmountPaid: (v: string) => void;
+  paymentMethod: string; setPaymentMethod: (v: string) => void;
+}) {
+  const paid = amountPaid ? Number(amountPaid) : 0;
+  const balance = total - paid;
+  return (
+    <div className="rounded-md border p-3 space-y-3 bg-muted/30">
+      <div className="text-sm font-medium">Receive Payment <span className="text-xs font-normal text-muted-foreground">(optional)</span></div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="text-xs">Amount received (KSh)</Label>
+          <Input type="number" step="0.01" value={amountPaid} onChange={e => setAmountPaid(e.target.value)} placeholder="0.00" />
+        </div>
+        <div>
+          <Label className="text-xs">Method</Label>
+          <Input value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} placeholder="Cash / M-Pesa / Card" />
+        </div>
+      </div>
+      {amountPaid && (
+        <div className="text-xs flex justify-between">
+          <span>Total: KSh {total.toFixed(2)}</span>
+          <span className={balance > 0 ? "text-destructive font-medium" : "text-primary font-medium"}>
+            {balance > 0 ? `Balance: KSh ${balance.toFixed(2)}` : balance < 0 ? `Change: KSh ${(-balance).toFixed(2)}` : "Paid in full"}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -180,12 +223,19 @@ function WholesaleForm() {
   const navigate = useNavigate();
   const [customer, setCustomer] = useState("");
   const [items, setItems] = useState<LineItem[]>([]);
+  const [amountPaid, setAmountPaid] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
+
+  const total = items.reduce((a, b) => a + b.unit_price * b.quantity, 0);
 
   const submit = async () => {
     if (!customer || items.length === 0) { toast.error("Enter customer name and add drugs"); return; }
-    const total = items.reduce((a, b) => a + b.unit_price * b.quantity, 0);
     const { data: sale, error: sErr } = await supabase.from("sales").insert({
-      sale_type: "wholesale", customer_name: customer, total,
+      sale_type: "wholesale",
+      customer_name: customer,
+      total,
+      amount_paid: amountPaid ? Number(amountPaid) : 0,
+      payment_method: paymentMethod || null,
     }).select("id").single();
     if (sErr) { toast.error(sErr.message); return; }
 
@@ -213,6 +263,7 @@ function WholesaleForm() {
         <CardContent className="space-y-4">
           <DrugPicker drugs={drugs} onAdd={(d, qty) => setItems(prev => [...prev, { drug_id: d.id, drug_name: d.name, unit_price: Number(d.selling_price), quantity: qty }])} />
           <LineItemsTable items={items} onRemove={(i) => setItems(prev => prev.filter((_,idx)=>idx!==i))} />
+          <PaymentFields total={total} amountPaid={amountPaid} setAmountPaid={setAmountPaid} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} />
           <Button className="w-full" onClick={submit}><FileText className="h-4 w-4 mr-2"/>Generate Invoice</Button>
         </CardContent>
       </Card>
