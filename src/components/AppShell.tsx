@@ -28,8 +28,8 @@ export function AppShell({ title, nav, children }: { title: string; nav: NavItem
               <Pill className="h-5 w-5" />
             </div>
             <div className="leading-tight">
-              <div className="text-sm font-bold">LEMSA</div>
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Pharmacy MS</div>
+              <div className="text-sm font-bold">LEMSA PHARMACY</div>
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Management System</div>
             </div>
           </Link>
           <nav className="hidden md:flex items-center gap-1">
