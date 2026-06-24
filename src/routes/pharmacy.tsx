@@ -139,6 +139,7 @@ function RetailForm() {
   const [paymentMethod, setPaymentMethod] = useState("");
 
   const total = items.reduce((a, b) => a + b.unit_price * b.quantity, 0);
+  useEffect(() => { setAmountPaid(total > 0 ? total.toFixed(2) : ""); }, [total]);
 
   const submit = async (mode: "invoice" | "bill") => {
     if (items.length === 0) { toast.error("Add at least one drug"); return; }
@@ -246,6 +247,7 @@ function WholesaleForm() {
   const [paymentMethod, setPaymentMethod] = useState("");
 
   const total = items.reduce((a, b) => a + b.unit_price * b.quantity, 0);
+  useEffect(() => { setAmountPaid(total > 0 ? total.toFixed(2) : ""); }, [total]);
 
   const submit = async (mode: "invoice" | "bill") => {
     if (!customer || items.length === 0) { toast.error("Enter customer name and add drugs"); return; }
