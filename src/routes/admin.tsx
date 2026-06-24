@@ -19,6 +19,7 @@ const ADMIN_NAV = [
   { to: "/admin", label: "Dashboard" },
   { to: "/pharmacy", label: "Pharmacy" },
   { to: "/inventory", label: "Inventory" },
+  { to: "/director", label: "Public Site" },
 ];
 
 export const Route = createFileRoute("/admin")({
