@@ -196,7 +196,10 @@ function RetailForm() {
           <DrugPicker drugs={drugs} mode="retail" onAdd={(d, qty, unit_price) => setItems(prev => [...prev, { drug_id: d.id, drug_name: d.name, unit_price, quantity: qty }])} />
           <LineItemsTable items={items} onRemove={(i) => setItems(prev => prev.filter((_,idx)=>idx!==i))} />
           <PaymentFields total={total} amountPaid={amountPaid} setAmountPaid={setAmountPaid} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} />
-          <Button className="w-full" onClick={submit}><FileText className="h-4 w-4 mr-2"/>Generate Invoice</Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" onClick={() => submit("bill")}>Record Bill</Button>
+            <Button onClick={() => submit("invoice")}><FileText className="h-4 w-4 mr-2"/>Generate Invoice</Button>
+          </div>
         </CardContent>
       </Card>
     </div>
