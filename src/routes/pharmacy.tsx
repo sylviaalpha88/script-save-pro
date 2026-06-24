@@ -140,7 +140,7 @@ function RetailForm() {
 
   const total = items.reduce((a, b) => a + b.unit_price * b.quantity, 0);
 
-  const submit = async () => {
+  const submit = async (mode: "invoice" | "bill") => {
     if (items.length === 0) { toast.error("Add at least one drug"); return; }
     let patientId: string | null = null;
     if (name.trim()) {
@@ -168,8 +168,13 @@ function RetailForm() {
     const { error: iErr } = await supabase.from("sale_items").insert(rows);
     if (iErr) { toast.error(iErr.message); return; }
 
-    toast.success("Sale recorded");
-    navigate({ to: "/invoice/$id", params: { id: sale.id } });
+    if (mode === "invoice") {
+      toast.success("Sale recorded");
+      navigate({ to: "/invoice/$id", params: { id: sale.id } });
+    } else {
+      toast.success(`Bill recorded · KSh ${total.toFixed(2)}`);
+      setItems([]); setName(""); setAge(""); setPcode(""); setPrescription(""); setAmountPaid(""); setPaymentMethod("");
+    }
   };
 
   return (
