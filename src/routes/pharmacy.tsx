@@ -247,7 +247,7 @@ function WholesaleForm() {
 
   const total = items.reduce((a, b) => a + b.unit_price * b.quantity, 0);
 
-  const submit = async () => {
+  const submit = async (mode: "invoice" | "bill") => {
     if (!customer || items.length === 0) { toast.error("Enter customer name and add drugs"); return; }
     const { data: sale, error: sErr } = await supabase.from("sales").insert({
       sale_type: "wholesale",
@@ -264,8 +264,13 @@ function WholesaleForm() {
     }));
     const { error: iErr } = await supabase.from("sale_items").insert(rows);
     if (iErr) { toast.error(iErr.message); return; }
-    toast.success("Wholesale recorded");
-    navigate({ to: "/invoice/$id", params: { id: sale.id } });
+    if (mode === "invoice") {
+      toast.success("Wholesale recorded");
+      navigate({ to: "/invoice/$id", params: { id: sale.id } });
+    } else {
+      toast.success(`Bill recorded · KSh ${total.toFixed(2)}`);
+      setItems([]); setCustomer(""); setAmountPaid(""); setPaymentMethod("");
+    }
   };
 
   return (
@@ -283,7 +288,10 @@ function WholesaleForm() {
           <DrugPicker drugs={drugs} mode="wholesale" onAdd={(d, qty, unit_price) => setItems(prev => [...prev, { drug_id: d.id, drug_name: d.name, unit_price, quantity: qty }])} />
           <LineItemsTable items={items} onRemove={(i) => setItems(prev => prev.filter((_,idx)=>idx!==i))} />
           <PaymentFields total={total} amountPaid={amountPaid} setAmountPaid={setAmountPaid} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} />
-          <Button className="w-full" onClick={submit}><FileText className="h-4 w-4 mr-2"/>Generate Invoice</Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" onClick={() => submit("bill")}>Record Bill</Button>
+            <Button onClick={() => submit("invoice")}><FileText className="h-4 w-4 mr-2"/>Generate Invoice</Button>
+          </div>
         </CardContent>
       </Card>
     </div>
