@@ -212,7 +212,7 @@ function SalesTable({ title, rows }: { title: string; rows: SaleRow[] }) {
 type ItemAgg = { drug_name: string; day: string; quantity: number; revenue: number };
 
 function PerItemHistory() {
-  const [from, setFrom] = useState(todayISO(-7));
+  const [from, setFrom] = useState(todayISO());
   const [to, setTo] = useState(todayISO());
   const [rows, setRows] = useState<ItemAgg[]>([]);
 
