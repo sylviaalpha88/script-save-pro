@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PharmacyRouteImport } from './routes/pharmacy'
 import { Route as InventoryRouteImport } from './routes/inventory'
+import { Route as DirectorRouteImport } from './routes/director'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -24,6 +25,11 @@ const PharmacyRoute = PharmacyRouteImport.update({
 const InventoryRoute = InventoryRouteImport.update({
   id: '/inventory',
   path: '/inventory',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DirectorRoute = DirectorRouteImport.update({
+  id: '/director',
+  path: '/director',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/director': typeof DirectorRoute
   '/inventory': typeof InventoryRoute
   '/pharmacy': typeof PharmacyRoute
   '/invoice/$id': typeof InvoiceIdRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/director': typeof DirectorRoute
   '/inventory': typeof InventoryRoute
   '/pharmacy': typeof PharmacyRoute
   '/invoice/$id': typeof InvoiceIdRoute
@@ -68,6 +76,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/director': typeof DirectorRoute
   '/inventory': typeof InventoryRoute
   '/pharmacy': typeof PharmacyRoute
   '/invoice/$id': typeof InvoiceIdRoute
@@ -78,16 +87,25 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/director'
     | '/inventory'
     | '/pharmacy'
     | '/invoice/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/auth' | '/inventory' | '/pharmacy' | '/invoice/$id'
+  to:
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/director'
+    | '/inventory'
+    | '/pharmacy'
+    | '/invoice/$id'
   id:
     | '__root__'
     | '/'
     | '/admin'
     | '/auth'
+    | '/director'
     | '/inventory'
     | '/pharmacy'
     | '/invoice/$id'
@@ -97,6 +115,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
+  DirectorRoute: typeof DirectorRoute
   InventoryRoute: typeof InventoryRoute
   PharmacyRoute: typeof PharmacyRoute
   InvoiceIdRoute: typeof InvoiceIdRoute
@@ -116,6 +135,13 @@ declare module '@tanstack/react-router' {
       path: '/inventory'
       fullPath: '/inventory'
       preLoaderRoute: typeof InventoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/director': {
+      id: '/director'
+      path: '/director'
+      fullPath: '/director'
+      preLoaderRoute: typeof DirectorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -153,6 +179,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
+  DirectorRoute: DirectorRoute,
   InventoryRoute: InventoryRoute,
   PharmacyRoute: PharmacyRoute,
   InvoiceIdRoute: InvoiceIdRoute,
