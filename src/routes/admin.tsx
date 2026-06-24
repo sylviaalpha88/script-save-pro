@@ -63,27 +63,49 @@ function todayISO(offset = 0) {
   return d.toISOString().slice(0, 10);
 }
 
+type SaleWithPay = SaleRow & { amount_paid: number; payment_method: string | null };
+type SaleItemRow = { drug_name: string; quantity: number; subtotal: number; created_at: string; sales: { sale_type: "retail" | "wholesale" } | null };
+
 function SalesPanel() {
-  const [from, setFrom] = useState(todayISO(-30));
+  const [from, setFrom] = useState(todayISO());
   const [to, setTo] = useState(todayISO());
-  const [rows, setRows] = useState<SaleRow[]>([]);
+  const [rows, setRows] = useState<SaleWithPay[]>([]);
+  const [items, setItems] = useState<SaleItemRow[]>([]);
 
   const load = async () => {
     const { data, error } = await supabase
       .from("sales")
-      .select("id, sale_type, total, created_at, customer_name, patient_id")
+      .select("id, sale_type, total, created_at, customer_name, patient_id, amount_paid, payment_method")
       .gte("created_at", `${from}T00:00:00`)
       .lte("created_at", `${to}T23:59:59`)
       .order("created_at", { ascending: false });
     if (error) { toast.error(error.message); return; }
-    setRows((data as SaleRow[]) ?? []);
+    setRows((data as SaleWithPay[]) ?? []);
+
+    const { data: it, error: iErr } = await supabase
+      .from("sale_items")
+      .select("drug_name, quantity, subtotal, created_at, sales(sale_type)")
+      .gte("created_at", `${from}T00:00:00`)
+      .lte("created_at", `${to}T23:59:59`)
+      .order("created_at", { ascending: false });
+    if (iErr) { toast.error(iErr.message); return; }
+    setItems((it as unknown as SaleItemRow[]) ?? []);
   };
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
 
   const retail = rows.filter(r => r.sale_type === "retail");
   const whole = rows.filter(r => r.sale_type === "wholesale");
-  const sum = (arr: SaleRow[]) => arr.reduce((a, b) => a + Number(b.total), 0);
+  const sum = (arr: SaleWithPay[]) => arr.reduce((a, b) => a + Number(b.total), 0);
+  const isMpesa = (m: string | null) => !!m && /mpesa|m-pesa/i.test(m);
+  const isCash = (m: string | null) => !!m && /cash/i.test(m);
+  const sumPaid = (filter: (m: string | null) => boolean) =>
+    rows.filter(r => filter(r.payment_method)).reduce((a, b) => a + Number(b.amount_paid), 0);
+  const cashTotal = sumPaid(isCash);
+  const mpesaTotal = sumPaid(isMpesa);
+
+  const retailItems = items.filter(i => i.sales?.sale_type === "retail");
+  const wholeItems = items.filter(i => i.sales?.sale_type === "wholesale");
 
   return (
     <div className="space-y-6">
@@ -94,6 +116,7 @@ function SalesPanel() {
             <div><Label>From</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
             <div><Label>To</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
             <Button onClick={load}>Apply</Button>
+            <Button variant="outline" onClick={() => { const t = todayISO(); setFrom(t); setTo(t); setTimeout(load, 0); }}>Today</Button>
           </div>
         </CardContent>
       </Card>
@@ -104,11 +127,45 @@ function SalesPanel() {
         <StatCard icon={<DollarSign className="h-5 w-5"/>} label="Total" value={`KSh ${sum(rows).toFixed(2)}`} sub={`${rows.length} transactions`} />
       </div>
 
+      <div className="grid sm:grid-cols-2 gap-4">
+        <StatCard icon={<DollarSign className="h-5 w-5"/>} label="Cash Received" value={`KSh ${cashTotal.toFixed(2)}`} sub={`for ${from} → ${to}`} />
+        <StatCard icon={<DollarSign className="h-5 w-5"/>} label="M-Pesa Received" value={`KSh ${mpesaTotal.toFixed(2)}`} sub={`for ${from} → ${to}`} />
+      </div>
+
       <div className="grid md:grid-cols-2 gap-6">
         <SalesTable title="Retail" rows={retail} />
         <SalesTable title="Wholesale" rows={whole} />
       </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <ItemsTable title="Retail Items" rows={retailItems} />
+        <ItemsTable title="Wholesale Items" rows={wholeItems} />
+      </div>
     </div>
+  );
+}
+
+function ItemsTable({ title, rows }: { title: string; rows: SaleItemRow[] }) {
+  return (
+    <Card>
+      <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Drug</TableHead><TableHead className="text-right">Qty</TableHead><TableHead className="text-right">Subtotal</TableHead></TableRow></TableHeader>
+          <TableBody>
+            {rows.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No items in range</TableCell></TableRow>}
+            {rows.map((r, i) => (
+              <TableRow key={i}>
+                <TableCell className="whitespace-nowrap">{new Date(r.created_at).toLocaleString()}</TableCell>
+                <TableCell>{r.drug_name}</TableCell>
+                <TableCell className="text-right">{r.quantity}</TableCell>
+                <TableCell className="text-right">KSh {Number(r.subtotal).toFixed(2)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -155,7 +212,7 @@ function SalesTable({ title, rows }: { title: string; rows: SaleRow[] }) {
 type ItemAgg = { drug_name: string; day: string; quantity: number; revenue: number };
 
 function PerItemHistory() {
-  const [from, setFrom] = useState(todayISO(-7));
+  const [from, setFrom] = useState(todayISO());
   const [to, setTo] = useState(todayISO());
   const [rows, setRows] = useState<ItemAgg[]>([]);
 

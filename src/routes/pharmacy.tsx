@@ -140,7 +140,7 @@ function RetailForm() {
 
   const total = items.reduce((a, b) => a + b.unit_price * b.quantity, 0);
 
-  const submit = async () => {
+  const submit = async (mode: "invoice" | "bill") => {
     if (items.length === 0) { toast.error("Add at least one drug"); return; }
     let patientId: string | null = null;
     if (name.trim()) {
@@ -168,8 +168,13 @@ function RetailForm() {
     const { error: iErr } = await supabase.from("sale_items").insert(rows);
     if (iErr) { toast.error(iErr.message); return; }
 
-    toast.success("Sale recorded");
-    navigate({ to: "/invoice/$id", params: { id: sale.id } });
+    if (mode === "invoice") {
+      toast.success("Sale recorded");
+      navigate({ to: "/invoice/$id", params: { id: sale.id } });
+    } else {
+      toast.success(`Bill recorded · KSh ${total.toFixed(2)}`);
+      setItems([]); setName(""); setAge(""); setPcode(""); setPrescription(""); setAmountPaid(""); setPaymentMethod("");
+    }
   };
 
   return (
@@ -191,7 +196,10 @@ function RetailForm() {
           <DrugPicker drugs={drugs} mode="retail" onAdd={(d, qty, unit_price) => setItems(prev => [...prev, { drug_id: d.id, drug_name: d.name, unit_price, quantity: qty }])} />
           <LineItemsTable items={items} onRemove={(i) => setItems(prev => prev.filter((_,idx)=>idx!==i))} />
           <PaymentFields total={total} amountPaid={amountPaid} setAmountPaid={setAmountPaid} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} />
-          <Button className="w-full" onClick={submit}><FileText className="h-4 w-4 mr-2"/>Generate Invoice</Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" onClick={() => submit("bill")}>Record Bill</Button>
+            <Button onClick={() => submit("invoice")}><FileText className="h-4 w-4 mr-2"/>Generate Invoice</Button>
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -239,7 +247,7 @@ function WholesaleForm() {
 
   const total = items.reduce((a, b) => a + b.unit_price * b.quantity, 0);
 
-  const submit = async () => {
+  const submit = async (mode: "invoice" | "bill") => {
     if (!customer || items.length === 0) { toast.error("Enter customer name and add drugs"); return; }
     const { data: sale, error: sErr } = await supabase.from("sales").insert({
       sale_type: "wholesale",
@@ -256,8 +264,13 @@ function WholesaleForm() {
     }));
     const { error: iErr } = await supabase.from("sale_items").insert(rows);
     if (iErr) { toast.error(iErr.message); return; }
-    toast.success("Wholesale recorded");
-    navigate({ to: "/invoice/$id", params: { id: sale.id } });
+    if (mode === "invoice") {
+      toast.success("Wholesale recorded");
+      navigate({ to: "/invoice/$id", params: { id: sale.id } });
+    } else {
+      toast.success(`Bill recorded · KSh ${total.toFixed(2)}`);
+      setItems([]); setCustomer(""); setAmountPaid(""); setPaymentMethod("");
+    }
   };
 
   return (
@@ -275,7 +288,10 @@ function WholesaleForm() {
           <DrugPicker drugs={drugs} mode="wholesale" onAdd={(d, qty, unit_price) => setItems(prev => [...prev, { drug_id: d.id, drug_name: d.name, unit_price, quantity: qty }])} />
           <LineItemsTable items={items} onRemove={(i) => setItems(prev => prev.filter((_,idx)=>idx!==i))} />
           <PaymentFields total={total} amountPaid={amountPaid} setAmountPaid={setAmountPaid} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} />
-          <Button className="w-full" onClick={submit}><FileText className="h-4 w-4 mr-2"/>Generate Invoice</Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" onClick={() => submit("bill")}>Record Bill</Button>
+            <Button onClick={() => submit("invoice")}><FileText className="h-4 w-4 mr-2"/>Generate Invoice</Button>
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -295,21 +311,27 @@ type DispRow = {
   drugs: { stock_quantity: number; min_stock: number; unit: string } | null;
 };
 
+function todayISO() { return new Date().toISOString().slice(0, 10); }
+
 function DispensedPanel() {
   const [rows, setRows] = useState<DispRow[]>([]);
   const [q, setQ] = useState("");
+  const [from, setFrom] = useState(todayISO());
+  const [to, setTo] = useState(todayISO());
   const navigate = useNavigate();
 
   const load = async () => {
     const { data, error } = await supabase
       .from("sale_items")
       .select("id, created_at, sale_id, drug_id, drug_name, quantity, unit_price, subtotal, sales(sale_type, customer_name), drugs(stock_quantity, min_stock, unit)")
+      .gte("created_at", `${from}T00:00:00`)
+      .lte("created_at", `${to}T23:59:59`)
       .order("created_at", { ascending: false })
-      .limit(200);
+      .limit(500);
     if (error) { toast.error(error.message); return; }
     setRows((data as unknown as DispRow[]) ?? []);
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
 
   const filtered = q.trim()
     ? rows.filter(r =>
@@ -322,10 +344,16 @@ function DispensedPanel() {
       <CardContent className="p-5 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="font-semibold">Recently Dispensed Drugs</div>
-            <div className="text-xs text-muted-foreground">Stock is automatically removed when a sale is generated.</div>
+            <div className="font-semibold">Dispensed Drugs</div>
+            <div className="text-xs text-muted-foreground">Showing drugs sold between selected dates. Defaults to today.</div>
           </div>
           <Input className="max-w-xs" placeholder="Search drug or customer…" value={q} onChange={e=>setQ(e.target.value)} />
+        </div>
+        <div className="flex flex-wrap items-end gap-3">
+          <div><Label className="text-xs">From</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
+          <div><Label className="text-xs">To</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
+          <Button onClick={load}>Apply</Button>
+          <Button variant="outline" onClick={() => { const t = todayISO(); setFrom(t); setTo(t); setTimeout(load, 0); }}>Today</Button>
         </div>
         <div className="border rounded-md overflow-x-auto">
           <Table>
@@ -342,7 +370,7 @@ function DispensedPanel() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">No dispenses yet</TableCell></TableRow>}
+              {filtered.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">No dispenses in selected range</TableCell></TableRow>}
               {filtered.map(r => {
                 const stock = r.drugs?.stock_quantity ?? 0;
                 const low = r.drugs ? stock < r.drugs.min_stock : false;
