@@ -15,11 +15,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { createStaffUser, deleteStaffUser } from "@/lib/admin.functions";
 import { Trash2, Users, DollarSign, ShoppingCart, TrendingUp } from "lucide-react";
 
-const ADMIN_NAV = [
+const BASE_ADMIN_NAV = [
   { to: "/admin", label: "Dashboard" },
   { to: "/pharmacy", label: "Pharmacy" },
   { to: "/inventory", label: "Inventory" },
-  { to: "/director", label: "Public Site" },
 ];
 
 export const Route = createFileRoute("/admin")({
@@ -38,8 +37,12 @@ type SaleRow = {
 
 function AdminPage() {
   const { profile, loading } = useAuth();
+  const nav = profile?.can_edit_site
+    ? [...BASE_ADMIN_NAV, { to: "/director", label: "Public Site" }]
+    : BASE_ADMIN_NAV;
   return (
-    <AppShell title="Admin Dashboard" nav={ADMIN_NAV}>
+    <AppShell title="Admin Dashboard" nav={nav}>
+
       {!loading && profile?.role !== "admin" ? (
         <p className="text-destructive">Access denied. Admin only.</p>
       ) : (
@@ -275,7 +278,12 @@ function UsersPanel() {
   const del = useServerFn(deleteStaffUser);
 
   const load = async () => {
-    const { data } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+    // RLS scopes this to the admin's own pharmacy; hide other admins (you only manage your staff).
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, username, role, created_at")
+      .neq("role", "admin")
+      .order("created_at", { ascending: false });
     setUsers((data as Profile[]) ?? []);
   };
   useEffect(() => { load(); }, []);
