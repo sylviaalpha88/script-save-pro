@@ -130,6 +130,7 @@ function LineItemsTable({ items, onRemove }: { items: LineItem[]; onRemove: (i: 
 function RetailForm() {
   const drugs = useDrugs();
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [pcode, setPcode] = useState("");
@@ -143,10 +144,13 @@ function RetailForm() {
 
   const submit = async (mode: "invoice" | "bill") => {
     if (items.length === 0) { toast.error("Add at least one drug"); return; }
+    const pharmacyId = profile?.pharmacy_id;
+    if (!pharmacyId) { toast.error("Your account is not linked to a pharmacy"); return; }
     let patientId: string | null = null;
     if (name.trim()) {
       const { data: pat, error: pErr } = await supabase.from("patients").insert({
         name: name.trim(), age: age ? Number(age) : null, patient_code: pcode || null,
+        pharmacy_id: pharmacyId,
       }).select("id").single();
       if (pErr) { toast.error(pErr.message); return; }
       patientId = pat.id;
@@ -159,12 +163,14 @@ function RetailForm() {
       total,
       amount_paid: amountPaid ? Number(amountPaid) : 0,
       payment_method: paymentMethod || null,
+      pharmacy_id: pharmacyId,
     }).select("id").single();
     if (sErr) { toast.error(sErr.message); return; }
 
     const rows = items.map(it => ({
       sale_id: sale.id, drug_id: it.drug_id, drug_name: it.drug_name,
       quantity: it.quantity, unit_price: it.unit_price, subtotal: it.unit_price * it.quantity,
+      pharmacy_id: pharmacyId,
     }));
     const { error: iErr } = await supabase.from("sale_items").insert(rows);
     if (iErr) { toast.error(iErr.message); return; }
@@ -177,6 +183,7 @@ function RetailForm() {
       setItems([]); setName(""); setAge(""); setPcode(""); setPrescription(""); setAmountPaid(""); setPaymentMethod("");
     }
   };
+
 
   return (
     <div className="grid lg:grid-cols-2 gap-6">
@@ -241,6 +248,7 @@ function PaymentFields({ total, amountPaid, setAmountPaid, paymentMethod, setPay
 function WholesaleForm() {
   const drugs = useDrugs();
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [customer, setCustomer] = useState("");
   const [items, setItems] = useState<LineItem[]>([]);
   const [amountPaid, setAmountPaid] = useState("");
@@ -251,18 +259,22 @@ function WholesaleForm() {
 
   const submit = async (mode: "invoice" | "bill") => {
     if (!customer || items.length === 0) { toast.error("Enter customer name and add drugs"); return; }
+    const pharmacyId = profile?.pharmacy_id;
+    if (!pharmacyId) { toast.error("Your account is not linked to a pharmacy"); return; }
     const { data: sale, error: sErr } = await supabase.from("sales").insert({
       sale_type: "wholesale",
       customer_name: customer,
       total,
       amount_paid: amountPaid ? Number(amountPaid) : 0,
       payment_method: paymentMethod || null,
+      pharmacy_id: pharmacyId,
     }).select("id").single();
     if (sErr) { toast.error(sErr.message); return; }
 
     const rows = items.map(it => ({
       sale_id: sale.id, drug_id: it.drug_id, drug_name: it.drug_name,
       quantity: it.quantity, unit_price: it.unit_price, subtotal: it.unit_price * it.quantity,
+      pharmacy_id: pharmacyId,
     }));
     const { error: iErr } = await supabase.from("sale_items").insert(rows);
     if (iErr) { toast.error(iErr.message); return; }
@@ -274,6 +286,7 @@ function WholesaleForm() {
       setItems([]); setCustomer(""); setAmountPaid(""); setPaymentMethod("");
     }
   };
+
 
   return (
     <div className="grid lg:grid-cols-2 gap-6">

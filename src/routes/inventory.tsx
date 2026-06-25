@@ -160,6 +160,7 @@ function AddStockInline({ onAdd }: { onAdd: (n: number) => void }) {
 }
 
 function AddDrug({ onAdded }: { onAdded: () => void }) {
+  const { profile } = useAuth();
   const [name, setName] = useState("");
   const [unit, setUnit] = useState<"tab" | "cap" | "piece">("tab");
   const [buying, setBuying] = useState("");
@@ -171,6 +172,8 @@ function AddDrug({ onAdded }: { onAdded: () => void }) {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const pharmacyId = profile?.pharmacy_id;
+    if (!pharmacyId) { toast.error("Your account is not linked to a pharmacy"); return; }
     const retailNum = Number(retail);
     const { error } = await supabase.from("drugs").insert({
       name, unit,
@@ -181,12 +184,14 @@ function AddDrug({ onAdded }: { onAdded: () => void }) {
       wholesale_min_qty: Number(wsMin || 10),
       stock_quantity: Number(stock || 0),
       min_stock: Number(min || 10),
+      pharmacy_id: pharmacyId,
     });
     if (error) { toast.error(error.message); return; }
     toast.success("Drug added");
     setName(""); setBuying(""); setRetail(""); setWholesale(""); setWsMin("10"); setStock(""); setMin("10");
     onAdded();
   };
+
 
   return (
     <Card className="max-w-2xl">
