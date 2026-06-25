@@ -6,6 +6,9 @@ export interface Profile {
   id: string;
   username: string;
   role: Role;
+  pharmacy_id: string | null;
+  is_director: boolean;
+  can_edit_site: boolean;
 }
 
 interface AuthCtx {
@@ -36,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const { data } = await supabase
       .from("profiles")
-      .select("id, username, role")
+      .select("id, username, role, pharmacy_id, is_director, can_edit_site")
       .eq("id", user.id)
       .maybeSingle();
     setProfile((data as Profile) ?? null);

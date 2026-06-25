@@ -21,6 +21,7 @@ export type Database = {
           id: string
           min_stock: number
           name: string
+          pharmacy_id: string | null
           selling_price: number
           selling_price_retail: number
           selling_price_wholesale: number
@@ -35,6 +36,7 @@ export type Database = {
           id?: string
           min_stock?: number
           name: string
+          pharmacy_id?: string | null
           selling_price?: number
           selling_price_retail?: number
           selling_price_wholesale?: number
@@ -49,6 +51,7 @@ export type Database = {
           id?: string
           min_stock?: number
           name?: string
+          pharmacy_id?: string | null
           selling_price?: number
           selling_price_retail?: number
           selling_price_wholesale?: number
@@ -57,7 +60,15 @@ export type Database = {
           updated_at?: string
           wholesale_min_qty?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "drugs_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       patients: {
         Row: {
@@ -66,6 +77,7 @@ export type Database = {
           id: string
           name: string
           patient_code: string | null
+          pharmacy_id: string | null
         }
         Insert: {
           age?: number | null
@@ -73,6 +85,7 @@ export type Database = {
           id?: string
           name: string
           patient_code?: string | null
+          pharmacy_id?: string | null
         }
         Update: {
           age?: number | null
@@ -80,29 +93,73 @@ export type Database = {
           id?: string
           name?: string
           patient_code?: string | null
+          pharmacy_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patients_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pharmacies: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
         }
         Relationships: []
       }
       profiles: {
         Row: {
+          can_edit_site: boolean
           created_at: string
           id: string
+          is_director: boolean
+          pharmacy_id: string | null
           role: Database["public"]["Enums"]["app_role"]
           username: string
         }
         Insert: {
+          can_edit_site?: boolean
           created_at?: string
           id: string
+          is_director?: boolean
+          pharmacy_id?: string | null
           role: Database["public"]["Enums"]["app_role"]
           username: string
         }
         Update: {
+          can_edit_site?: boolean
           created_at?: string
           id?: string
+          is_director?: boolean
+          pharmacy_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           username?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sale_items: {
         Row: {
@@ -110,6 +167,7 @@ export type Database = {
           drug_id: string
           drug_name: string
           id: string
+          pharmacy_id: string | null
           quantity: number
           sale_id: string
           subtotal: number
@@ -120,6 +178,7 @@ export type Database = {
           drug_id: string
           drug_name: string
           id?: string
+          pharmacy_id?: string | null
           quantity: number
           sale_id: string
           subtotal: number
@@ -130,6 +189,7 @@ export type Database = {
           drug_id?: string
           drug_name?: string
           id?: string
+          pharmacy_id?: string | null
           quantity?: number
           sale_id?: string
           subtotal?: number
@@ -141,6 +201,13 @@ export type Database = {
             columns: ["drug_id"]
             isOneToOne: false
             referencedRelation: "drugs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_items_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
             referencedColumns: ["id"]
           },
           {
@@ -161,6 +228,7 @@ export type Database = {
           id: string
           patient_id: string | null
           payment_method: string | null
+          pharmacy_id: string | null
           sale_type: Database["public"]["Enums"]["sale_type"]
           total: number
         }
@@ -172,6 +240,7 @@ export type Database = {
           id?: string
           patient_id?: string | null
           payment_method?: string | null
+          pharmacy_id?: string | null
           sale_type: Database["public"]["Enums"]["sale_type"]
           total?: number
         }
@@ -183,6 +252,7 @@ export type Database = {
           id?: string
           patient_id?: string | null
           payment_method?: string | null
+          pharmacy_id?: string | null
           sale_type?: Database["public"]["Enums"]["sale_type"]
           total?: number
         }
@@ -192,6 +262,13 @@ export type Database = {
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
             referencedColumns: ["id"]
           },
         ]
@@ -228,6 +305,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_edit_public_site: { Args: { _uid: string }; Returns: boolean }
+      current_pharmacy_id: { Args: never; Returns: string }
       current_role_name: {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
@@ -239,6 +318,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_director: { Args: { _uid: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "pharmacy" | "inventory"

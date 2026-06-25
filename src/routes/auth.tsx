@@ -1,7 +1,7 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { ensureAdmin, resolveUsername } from "@/lib/admin.functions";
+import { ensureDirector, resolveUsername } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const ensure = useServerFn(ensureAdmin);
+  const ensure = useServerFn(ensureDirector);
   const resolve = useServerFn(resolveUsername);
   const navigate = useNavigate();
   const { refresh, profile } = useAuth();
@@ -26,7 +26,11 @@ function AuthPage() {
 
   useEffect(() => { ensure({}).catch(() => {}); }, [ensure]);
   useEffect(() => {
-    if (profile) navigate({ to: "/" });
+    if (!profile) return;
+    if (profile.is_director) navigate({ to: "/director" });
+    else if (profile.role === "admin") navigate({ to: "/admin" });
+    else if (profile.role === "inventory") navigate({ to: "/inventory" });
+    else navigate({ to: "/pharmacy" });
   }, [profile, navigate]);
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -38,7 +42,6 @@ function AuthPage() {
       if (error) throw error;
       await refresh();
       toast.success("Welcome to LEMSA");
-      navigate({ to: "/" });
     } catch (err) {
       toast.error((err as Error).message || "Invalid credentials");
     } finally {
@@ -59,7 +62,7 @@ function AuthPage() {
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username">Username or email</Label>
               <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} required autoFocus />
             </div>
             <div className="space-y-2">
@@ -69,9 +72,9 @@ function AuthPage() {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Signing in…" : "Sign in"}
             </Button>
-            <p className="text-xs text-muted-foreground text-center">
-              Admin default: <code>Admin</code> / <code>123456789</code>
-            </p>
+            <div className="text-center">
+              <Link to="/" className="text-xs text-muted-foreground hover:underline">← Back to public site</Link>
+            </div>
           </form>
         </CardContent>
       </Card>
