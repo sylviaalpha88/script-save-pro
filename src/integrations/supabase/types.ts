@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      accountant_reports: {
+        Row: {
+          cash: number
+          created_at: string
+          created_by: string | null
+          id: string
+          mpesa: number
+          notes: string | null
+          pharmacy_id: string | null
+          report_date: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          cash?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mpesa?: number
+          notes?: string | null
+          pharmacy_id?: string | null
+          report_date?: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          cash?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mpesa?: number
+          notes?: string | null
+          pharmacy_id?: string | null
+          report_date?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accountant_reports_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drugs: {
         Row: {
           buying_price: number
@@ -321,7 +368,7 @@ export type Database = {
       is_director: { Args: { _uid: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "pharmacy" | "inventory"
+      app_role: "admin" | "pharmacy" | "inventory" | "accountant"
       drug_unit: "tab" | "cap" | "piece"
       sale_type: "retail" | "wholesale"
     }
@@ -451,7 +498,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "pharmacy", "inventory"],
+      app_role: ["admin", "pharmacy", "inventory", "accountant"],
       drug_unit: ["tab", "cap", "piece"],
       sale_type: ["retail", "wholesale"],
     },
