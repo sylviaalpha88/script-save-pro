@@ -22,7 +22,7 @@ type LineItem = { drug_id: string; drug_name: string; unit_price: number; quanti
 function PharmacyPage() {
   const { profile, loading } = useAuth();
   const nav = profile?.role === "admin"
-    ? [{ to: "/admin", label: "Dashboard" }, { to: "/pharmacy", label: "Pharmacy" }, { to: "/inventory", label: "Inventory" }]
+    ? [{ to: "/admin", label: "Dashboard" }, { to: "/pharmacy", label: "Pharmacy" }, { to: "/inventory", label: "Inventory" }, { to: "/accountant", label: "Accountant" }]
     : [{ to: "/pharmacy", label: "Pharmacy" }];
   return (
     <AppShell title="Pharmacy – Sales" nav={nav}>
