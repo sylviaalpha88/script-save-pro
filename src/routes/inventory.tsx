@@ -34,7 +34,7 @@ type Drug = {
 function InventoryPage() {
   const { profile, loading } = useAuth();
   const nav = profile?.role === "admin"
-    ? [{ to: "/admin", label: "Dashboard" }, { to: "/pharmacy", label: "Pharmacy" }, { to: "/inventory", label: "Inventory" }]
+    ? [{ to: "/admin", label: "Dashboard" }, { to: "/pharmacy", label: "Pharmacy" }, { to: "/inventory", label: "Inventory" }, { to: "/accountant", label: "Accountant" }]
     : [{ to: "/inventory", label: "Inventory" }];
   return (
     <AppShell title="Inventory Management" nav={nav}>

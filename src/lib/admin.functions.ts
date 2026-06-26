@@ -173,11 +173,11 @@ export const deletePharmacyAdmin = createServerFn({ method: "POST" })
 
 export const createStaffUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { username: string; password: string; role: "pharmacy" | "inventory" }) =>
+  .inputValidator((d: { username: string; password: string; role: "pharmacy" | "inventory" | "accountant" }) =>
     z.object({
       username: z.string().min(2).max(50),
       password: z.string().min(6).max(100),
-      role: z.enum(["pharmacy", "inventory"]),
+      role: z.enum(["pharmacy", "inventory", "accountant"]),
     }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: me } = await context.supabase

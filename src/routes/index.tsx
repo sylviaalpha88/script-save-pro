@@ -39,6 +39,7 @@ function Index() {
       if (profile.is_director) navigate({ to: "/director" });
       else if (profile.role === "admin") navigate({ to: "/admin" });
       else if (profile.role === "inventory") navigate({ to: "/inventory" });
+      else if (profile.role === "accountant") navigate({ to: "/accountant" });
       else navigate({ to: "/pharmacy" });
     }
   }, [loading, profile, navigate]);
@@ -63,7 +64,7 @@ function Index() {
     <div className="min-h-screen bg-background">
       {/* Hero */}
       <div id="home" className="relative min-h-screen">
-        <img src={heroImg} alt="Pharmacist attending to a client at the pharmacy counter" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={sections.find(s => s.section === "home")?.image_url || heroImg} alt="Pharmacist attending to a client at the pharmacy counter" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
 
         <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-4 flex-wrap gap-3">
