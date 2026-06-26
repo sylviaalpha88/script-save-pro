@@ -30,6 +30,7 @@ function AuthPage() {
     if (profile.is_director) navigate({ to: "/director" });
     else if (profile.role === "admin") navigate({ to: "/admin" });
     else if (profile.role === "inventory") navigate({ to: "/inventory" });
+    else if (profile.role === "accountant") navigate({ to: "/accountant" });
     else navigate({ to: "/pharmacy" });
   }, [profile, navigate]);
 
