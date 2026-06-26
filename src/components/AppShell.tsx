@@ -27,10 +27,7 @@ export function AppShell({ title, nav, children }: { title: string; nav: NavItem
             <div className="h-9 w-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
               <Pill className="h-5 w-5" />
             </div>
-            <div className="leading-tight">
-              <div className="text-sm font-bold">LEMSA PHARMACY</div>
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Management System</div>
-            </div>
+            <div className="text-sm font-bold whitespace-nowrap">LEMSA Pharmacy Management System</div>
           </Link>
           <nav className="hidden md:flex items-center gap-1">
             {nav.map((n) => {
