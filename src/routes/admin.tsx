@@ -316,6 +316,7 @@ function UsersPanel() {
                 <SelectContent>
                   <SelectItem value="pharmacy">Pharmacy</SelectItem>
                   <SelectItem value="inventory">Inventory</SelectItem>
+                  <SelectItem value="accountant">Accountant</SelectItem>
                 </SelectContent>
               </Select>
             </div>
