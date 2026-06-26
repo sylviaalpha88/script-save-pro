@@ -354,3 +354,127 @@ function UsersPanel() {
     </div>
   );
 }
+
+type ReportRow = { id: string; report_date: string; cash: number; mpesa: number; total: number; notes: string | null; created_at: string };
+
+function ReconciliationPanel() {
+  const [from, setFrom] = useState(todayISO());
+  const [to, setTo] = useState(todayISO());
+  const [sales, setSales] = useState<SaleWithPay[]>([]);
+  const [reports, setReports] = useState<ReportRow[]>([]);
+
+  const load = async () => {
+    const { data: s, error: sErr } = await supabase
+      .from("sales")
+      .select("id, sale_type, total, created_at, customer_name, patient_id, amount_paid, payment_method")
+      .gte("created_at", `${from}T00:00:00`)
+      .lte("created_at", `${to}T23:59:59`);
+    if (sErr) { toast.error(sErr.message); return; }
+    setSales((s as SaleWithPay[]) ?? []);
+
+    const { data: r, error: rErr } = await supabase
+      .from("accountant_reports")
+      .select("id, report_date, cash, mpesa, total, notes, created_at")
+      .gte("report_date", from)
+      .lte("report_date", to)
+      .order("report_date", { ascending: false });
+    if (rErr) { toast.error(rErr.message); return; }
+    setReports((r as ReportRow[]) ?? []);
+  };
+
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+
+  const isMpesa = (m: string | null) => !!m && /mpesa|m-pesa/i.test(m);
+  const isCash = (m: string | null) => !!m && /cash/i.test(m);
+  const sysCash = sales.filter(r => isCash(r.payment_method)).reduce((a, b) => a + Number(b.amount_paid), 0);
+  const sysMpesa = sales.filter(r => isMpesa(r.payment_method)).reduce((a, b) => a + Number(b.amount_paid), 0);
+  const sysTotal = sysCash + sysMpesa;
+
+  const repCash = reports.reduce((a, b) => a + Number(b.cash), 0);
+  const repMpesa = reports.reduce((a, b) => a + Number(b.mpesa), 0);
+  const repTotal = reports.reduce((a, b) => a + Number(b.total), 0);
+
+  const dCash = repCash - sysCash;
+  const dMpesa = repMpesa - sysMpesa;
+  const dTotal = repTotal - sysTotal;
+
+  const fmtDev = (n: number) => {
+    if (Math.abs(n) < 0.005) return <span className="text-green-600 font-semibold">0.00 ✓</span>;
+    const sign = n > 0 ? "+" : "-";
+    return <span className="text-red-600 font-semibold">{sign} KSh {Math.abs(n).toFixed(2)}</span>;
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader><CardTitle>Filter</CardTitle></CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap items-end gap-3">
+            <div><Label>From</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
+            <div><Label>To</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
+            <Button onClick={load}>Apply</Button>
+            <Button variant="outline" onClick={() => { const t = todayISO(); setFrom(t); setTo(t); setTimeout(load, 0); }}>Today</Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Reconciliation ({from} → {to})</CardTitle></CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Channel</TableHead>
+                <TableHead className="text-right">System (Sales)</TableHead>
+                <TableHead className="text-right">Accountant Reported</TableHead>
+                <TableHead className="text-right">Deviation (Reported − System)</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-medium">Cash</TableCell>
+                <TableCell className="text-right">KSh {sysCash.toFixed(2)}</TableCell>
+                <TableCell className="text-right">KSh {repCash.toFixed(2)}</TableCell>
+                <TableCell className="text-right">{fmtDev(dCash)}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">M-Pesa</TableCell>
+                <TableCell className="text-right">KSh {sysMpesa.toFixed(2)}</TableCell>
+                <TableCell className="text-right">KSh {repMpesa.toFixed(2)}</TableCell>
+                <TableCell className="text-right">{fmtDev(dMpesa)}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-bold">Total</TableCell>
+                <TableCell className="text-right font-bold">KSh {sysTotal.toFixed(2)}</TableCell>
+                <TableCell className="text-right font-bold">KSh {repTotal.toFixed(2)}</TableCell>
+                <TableCell className="text-right">{fmtDev(dTotal)}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+          <p className="text-xs text-muted-foreground mt-3">Red deviations mean the accountant's report differs from sales. + means accountant reported more than the system; − means less.</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Accountant Submissions</CardTitle></CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader><TableRow><TableHead>Date</TableHead><TableHead className="text-right">Cash</TableHead><TableHead className="text-right">M-Pesa</TableHead><TableHead className="text-right">Total</TableHead><TableHead>Notes</TableHead></TableRow></TableHeader>
+            <TableBody>
+              {reports.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">No reports submitted</TableCell></TableRow>}
+              {reports.map(r => (
+                <TableRow key={r.id}>
+                  <TableCell>{r.report_date}</TableCell>
+                  <TableCell className="text-right">KSh {Number(r.cash).toFixed(2)}</TableCell>
+                  <TableCell className="text-right">KSh {Number(r.mpesa).toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-medium">KSh {Number(r.total).toFixed(2)}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{r.notes ?? "—"}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
