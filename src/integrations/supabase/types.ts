@@ -61,6 +61,130 @@ export type Database = {
           },
         ]
       }
+      buyer_order_items: {
+        Row: {
+          approved_qty: number | null
+          created_at: string
+          drug_id: string | null
+          drug_name: string
+          flagged_out_of_stock: boolean
+          id: string
+          order_id: string
+          pharmacy_id: string
+          reject_reason: string | null
+          requested_qty: number
+          status: string
+          subtotal: number
+          unit_price: number
+        }
+        Insert: {
+          approved_qty?: number | null
+          created_at?: string
+          drug_id?: string | null
+          drug_name: string
+          flagged_out_of_stock?: boolean
+          id?: string
+          order_id: string
+          pharmacy_id: string
+          reject_reason?: string | null
+          requested_qty: number
+          status?: string
+          subtotal?: number
+          unit_price?: number
+        }
+        Update: {
+          approved_qty?: number | null
+          created_at?: string
+          drug_id?: string | null
+          drug_name?: string
+          flagged_out_of_stock?: boolean
+          id?: string
+          order_id?: string
+          pharmacy_id?: string
+          reject_reason?: string | null
+          requested_qty?: number
+          status?: string
+          subtotal?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buyer_order_items_drug_id_fkey"
+            columns: ["drug_id"]
+            isOneToOne: false
+            referencedRelation: "drugs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buyer_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "buyer_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buyer_order_items_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      buyer_orders: {
+        Row: {
+          amount_paid: number
+          buyer_id: string
+          created_at: string
+          id: string
+          payment_method: string | null
+          payment_status: string
+          pharmacy_id: string
+          status: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          amount_paid?: number
+          buyer_id: string
+          created_at?: string
+          id?: string
+          payment_method?: string | null
+          payment_status?: string
+          pharmacy_id: string
+          status?: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          amount_paid?: number
+          buyer_id?: string
+          created_at?: string
+          id?: string
+          payment_method?: string | null
+          payment_status?: string
+          pharmacy_id?: string
+          status?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buyer_orders_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "wholesale_buyers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buyer_orders_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drugs: {
         Row: {
           buying_price: number
@@ -347,6 +471,62 @@ export type Database = {
         }
         Relationships: []
       }
+      wholesale_buyers: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          id_number: string | null
+          license_number: string | null
+          license_pdf_path: string | null
+          location: string | null
+          name: string
+          pharmacy_id: string | null
+          phone: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          id_number?: string | null
+          license_number?: string | null
+          license_pdf_path?: string | null
+          location?: string | null
+          name: string
+          pharmacy_id?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          id_number?: string | null
+          license_number?: string | null
+          license_pdf_path?: string | null
+          location?: string | null
+          name?: string
+          pharmacy_id?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesale_buyers_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -368,7 +548,7 @@ export type Database = {
       is_director: { Args: { _uid: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "pharmacy" | "inventory" | "accountant"
+      app_role: "admin" | "pharmacy" | "inventory" | "accountant" | "buyer"
       drug_unit: "tab" | "cap" | "piece"
       sale_type: "retail" | "wholesale"
     }
@@ -498,7 +678,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "pharmacy", "inventory", "accountant"],
+      app_role: ["admin", "pharmacy", "inventory", "accountant", "buyer"],
       drug_unit: ["tab", "cap", "piece"],
       sale_type: ["retail", "wholesale"],
     },
