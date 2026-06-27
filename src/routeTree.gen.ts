@@ -9,15 +9,22 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RegisterRouteImport } from './routes/register'
 import { Route as PharmacyRouteImport } from './routes/pharmacy'
 import { Route as InventoryRouteImport } from './routes/inventory'
 import { Route as DirectorRouteImport } from './routes/director'
+import { Route as BuyerRouteImport } from './routes/buyer'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AccountantRouteImport } from './routes/accountant'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InvoiceIdRouteImport } from './routes/invoice.$id'
 
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PharmacyRoute = PharmacyRouteImport.update({
   id: '/pharmacy',
   path: '/pharmacy',
@@ -31,6 +38,11 @@ const InventoryRoute = InventoryRouteImport.update({
 const DirectorRoute = DirectorRouteImport.update({
   id: '/director',
   path: '/director',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuyerRoute = BuyerRouteImport.update({
+  id: '/buyer',
+  path: '/buyer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -64,9 +76,11 @@ export interface FileRoutesByFullPath {
   '/accountant': typeof AccountantRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/buyer': typeof BuyerRoute
   '/director': typeof DirectorRoute
   '/inventory': typeof InventoryRoute
   '/pharmacy': typeof PharmacyRoute
+  '/register': typeof RegisterRoute
   '/invoice/$id': typeof InvoiceIdRoute
 }
 export interface FileRoutesByTo {
@@ -74,9 +88,11 @@ export interface FileRoutesByTo {
   '/accountant': typeof AccountantRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/buyer': typeof BuyerRoute
   '/director': typeof DirectorRoute
   '/inventory': typeof InventoryRoute
   '/pharmacy': typeof PharmacyRoute
+  '/register': typeof RegisterRoute
   '/invoice/$id': typeof InvoiceIdRoute
 }
 export interface FileRoutesById {
@@ -85,9 +101,11 @@ export interface FileRoutesById {
   '/accountant': typeof AccountantRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/buyer': typeof BuyerRoute
   '/director': typeof DirectorRoute
   '/inventory': typeof InventoryRoute
   '/pharmacy': typeof PharmacyRoute
+  '/register': typeof RegisterRoute
   '/invoice/$id': typeof InvoiceIdRoute
 }
 export interface FileRouteTypes {
@@ -97,9 +115,11 @@ export interface FileRouteTypes {
     | '/accountant'
     | '/admin'
     | '/auth'
+    | '/buyer'
     | '/director'
     | '/inventory'
     | '/pharmacy'
+    | '/register'
     | '/invoice/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -107,9 +127,11 @@ export interface FileRouteTypes {
     | '/accountant'
     | '/admin'
     | '/auth'
+    | '/buyer'
     | '/director'
     | '/inventory'
     | '/pharmacy'
+    | '/register'
     | '/invoice/$id'
   id:
     | '__root__'
@@ -117,9 +139,11 @@ export interface FileRouteTypes {
     | '/accountant'
     | '/admin'
     | '/auth'
+    | '/buyer'
     | '/director'
     | '/inventory'
     | '/pharmacy'
+    | '/register'
     | '/invoice/$id'
   fileRoutesById: FileRoutesById
 }
@@ -128,14 +152,23 @@ export interface RootRouteChildren {
   AccountantRoute: typeof AccountantRoute
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
+  BuyerRoute: typeof BuyerRoute
   DirectorRoute: typeof DirectorRoute
   InventoryRoute: typeof InventoryRoute
   PharmacyRoute: typeof PharmacyRoute
+  RegisterRoute: typeof RegisterRoute
   InvoiceIdRoute: typeof InvoiceIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pharmacy': {
       id: '/pharmacy'
       path: '/pharmacy'
@@ -155,6 +188,13 @@ declare module '@tanstack/react-router' {
       path: '/director'
       fullPath: '/director'
       preLoaderRoute: typeof DirectorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/buyer': {
+      id: '/buyer'
+      path: '/buyer'
+      fullPath: '/buyer'
+      preLoaderRoute: typeof BuyerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -200,21 +240,13 @@ const rootRouteChildren: RootRouteChildren = {
   AccountantRoute: AccountantRoute,
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
+  BuyerRoute: BuyerRoute,
   DirectorRoute: DirectorRoute,
   InventoryRoute: InventoryRoute,
   PharmacyRoute: PharmacyRoute,
+  RegisterRoute: RegisterRoute,
   InvoiceIdRoute: InvoiceIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

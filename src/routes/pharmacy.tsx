@@ -1,8 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/lib/auth-context";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
+import { registerBuyer } from "@/lib/buyer.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,10 +37,14 @@ function PharmacyPage() {
             <TabsTrigger value="retail">Retail (Patients)</TabsTrigger>
             <TabsTrigger value="wholesale">Wholesale</TabsTrigger>
             <TabsTrigger value="dispensed">Dispensed</TabsTrigger>
+            <TabsTrigger value="buyers">Buyer Accounts</TabsTrigger>
+            <TabsTrigger value="buyer_orders">Buyer Orders</TabsTrigger>
           </TabsList>
           <TabsContent value="retail"><RetailForm /></TabsContent>
           <TabsContent value="wholesale"><WholesaleForm /></TabsContent>
           <TabsContent value="dispensed"><DispensedPanel /></TabsContent>
+          <TabsContent value="buyers"><BuyersPanel /></TabsContent>
+          <TabsContent value="buyer_orders"><BuyerOrdersPanel /></TabsContent>
         </Tabs>
 
       )}
@@ -414,3 +420,282 @@ function DispensedPanel() {
   );
 }
 
+
+// =============== BUYER ACCOUNTS PANEL ===============
+
+type WBuyer = {
+  id: string; user_id: string | null; name: string; email: string | null;
+  id_number: string | null; phone: string | null; location: string | null;
+  license_number: string | null; license_pdf_path: string | null;
+  status: string; created_at: string;
+};
+
+function BuyersPanel() {
+  const { profile } = useAuth();
+  const register = useServerFn(registerBuyer);
+  const [buyers, setBuyers] = useState<WBuyer[]>([]);
+  const [q, setQ] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ name: "", idNumber: "", phone: "", location: "", licenseNumber: "", email: "", password: "" });
+  const [busy, setBusy] = useState(false);
+
+  const load = async () => {
+    const { data } = await supabase.from("wholesale_buyers")
+      .select("id, user_id, name, email, id_number, phone, location, license_number, license_pdf_path, status, created_at")
+      .order("created_at", { ascending: false });
+    setBuyers((data as WBuyer[]) ?? []);
+  };
+  useEffect(() => { load(); }, []);
+
+  const filtered = q.trim() ? buyers.filter(b =>
+    [b.name, b.email, b.phone, b.id_number].some(v => (v ?? "").toLowerCase().includes(q.toLowerCase()))
+  ) : buyers;
+
+  const setStatus = async (id: string, status: string) => {
+    const { error } = await supabase.from("wholesale_buyers").update({ status }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Buyer ${status}`); load();
+  };
+
+  const openLicense = async (path: string) => {
+    const { data, error } = await supabase.storage.from("licenses").createSignedUrl(path, 300);
+    if (error || !data) { toast.error(error?.message ?? "Failed"); return; }
+    window.open(data.signedUrl, "_blank");
+  };
+
+  const submitForm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profile?.pharmacy_id) { toast.error("No pharmacy"); return; }
+    setBusy(true);
+    try {
+      await register({ data: { ...form, pharmacyId: profile.pharmacy_id } });
+      toast.success("Buyer registered");
+      setForm({ name: "", idNumber: "", phone: "", location: "", licenseNumber: "", email: "", password: "" });
+      setShowForm(false); load();
+    } catch (err) { toast.error((err as Error).message); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <Card><CardContent className="p-5 space-y-4">
+      <div className="flex flex-wrap gap-2 justify-between items-center">
+        <div className="font-semibold">Wholesale Buyer Accounts</div>
+        <div className="flex gap-2">
+          <Input className="w-56" placeholder="Search name/email/phone/ID…" value={q} onChange={e => setQ(e.target.value)} />
+          <Button size="sm" onClick={() => setShowForm(s => !s)}><Plus className="h-4 w-4 mr-1"/>Register buyer</Button>
+        </div>
+      </div>
+      {showForm && (
+        <form onSubmit={submitForm} className="grid sm:grid-cols-2 gap-3 p-3 border rounded-md bg-muted/30">
+          <div><Label className="text-xs">Name/Facility</Label><Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} required/></div>
+          <div><Label className="text-xs">ID Number</Label><Input value={form.idNumber} onChange={e => setForm({...form, idNumber: e.target.value})} required/></div>
+          <div><Label className="text-xs">Phone</Label><Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} required/></div>
+          <div><Label className="text-xs">Location</Label><Input value={form.location} onChange={e => setForm({...form, location: e.target.value})} required/></div>
+          <div><Label className="text-xs">License #</Label><Input value={form.licenseNumber} onChange={e => setForm({...form, licenseNumber: e.target.value})} required/></div>
+          <div><Label className="text-xs">Email</Label><Input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required/></div>
+          <div><Label className="text-xs">Password</Label><Input type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} required minLength={6}/></div>
+          <div className="sm:col-span-2"><Button type="submit" disabled={busy} className="w-full">{busy ? "Saving…" : "Create buyer account"}</Button></div>
+        </form>
+      )}
+      <div className="border rounded-md overflow-x-auto">
+        <Table>
+          <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Phone</TableHead><TableHead>ID</TableHead><TableHead>License</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
+          <TableBody>
+            {filtered.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No buyers yet</TableCell></TableRow>}
+            {filtered.map(b => (
+              <TableRow key={b.id}>
+                <TableCell className="font-medium">{b.name}<div className="text-xs text-muted-foreground">{b.location}</div></TableCell>
+                <TableCell>{b.email}</TableCell>
+                <TableCell>{b.phone}</TableCell>
+                <TableCell>{b.id_number}</TableCell>
+                <TableCell>{b.license_number}{b.license_pdf_path && <Button variant="link" size="sm" onClick={() => openLicense(b.license_pdf_path!)}>view PDF</Button>}</TableCell>
+                <TableCell><span className={b.status === "approved" ? "text-green-600" : b.status === "rejected" ? "text-destructive" : "text-amber-600"}>{b.status}</span></TableCell>
+                <TableCell className="text-right space-x-1">
+                  {b.status !== "approved" && <Button size="sm" onClick={() => setStatus(b.id, "approved")}>Approve</Button>}
+                  {b.status !== "rejected" && <Button size="sm" variant="outline" onClick={() => setStatus(b.id, "rejected")}>Reject</Button>}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </CardContent></Card>
+  );
+}
+
+// =============== BUYER ORDERS PANEL ===============
+type BOrder = {
+  id: string; buyer_id: string; created_at: string; status: string;
+  payment_status: string; total: number; amount_paid: number;
+  wholesale_buyers: { name: string; email: string | null; phone: string | null; id_number: string | null } | null;
+};
+type BOItem = {
+  id: string; order_id: string; drug_id: string | null; drug_name: string;
+  requested_qty: number; approved_qty: number | null; unit_price: number;
+  subtotal: number; status: string; reject_reason: string | null; flagged_out_of_stock: boolean;
+};
+
+function BuyerOrdersPanel() {
+  const { profile } = useAuth();
+  const [orders, setOrders] = useState<BOrder[]>([]);
+  const [items, setItems] = useState<Record<string, BOItem[]>>({});
+  const [search, setSearch] = useState("");
+  const [from, setFrom] = useState(todayISO());
+  const [to, setTo] = useState(todayISO());
+
+  const load = async () => {
+    const { data: os } = await supabase.from("buyer_orders")
+      .select("id, buyer_id, created_at, status, payment_status, total, amount_paid, wholesale_buyers(name, email, phone, id_number)")
+      .gte("created_at", `${from}T00:00:00`).lte("created_at", `${to}T23:59:59`)
+      .order("created_at", { ascending: false });
+    setOrders((os as unknown as BOrder[]) ?? []);
+    const ids = (os ?? []).map((o: any) => o.id);
+    if (ids.length) {
+      const { data: its } = await supabase.from("buyer_order_items")
+        .select("*").in("order_id", ids);
+      const grouped: Record<string, BOItem[]> = {};
+      (its ?? []).forEach((it: any) => { (grouped[it.order_id] ||= []).push(it); });
+      setItems(grouped);
+    } else setItems({});
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+
+  const filteredOrders = search.trim()
+    ? orders.filter(o => {
+        const b = o.wholesale_buyers; if (!b) return false;
+        const s = search.toLowerCase();
+        return [b.name, b.email, b.phone, b.id_number].some(v => (v ?? "").toLowerCase().includes(s));
+      })
+    : orders;
+
+  const decideItem = async (item: BOItem, status: "approved" | "rejected", approvedQty?: number, reason?: string) => {
+    const aQ = status === "approved" ? (approvedQty ?? item.requested_qty) : 0;
+    const sub = status === "approved" ? aQ * Number(item.unit_price) : 0;
+    const { error } = await supabase.from("buyer_order_items").update({
+      status, approved_qty: aQ, subtotal: sub, reject_reason: status === "rejected" ? (reason ?? null) : null,
+    }).eq("id", item.id);
+    if (error) { toast.error(error.message); return; }
+    load();
+  };
+
+  const finalizeReview = async (order: BOrder) => {
+    const its = items[order.id] ?? [];
+    if (its.some(i => i.status === "pending")) { toast.error("Decide every item first"); return; }
+    const total = its.filter(i => i.status === "approved").reduce((a, b) => a + Number(b.subtotal), 0);
+    const { error } = await supabase.from("buyer_orders").update({ status: "reviewed", total }).eq("id", order.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Order reviewed. Pending payment.");
+    load();
+  };
+
+  const recordPayment = async (order: BOrder, method: string) => {
+    const its = (items[order.id] ?? []).filter(i => i.status === "approved");
+    if (its.length === 0) { toast.error("No approved items"); return; }
+    const total = its.reduce((a, b) => a + Number(b.subtotal), 0);
+    // Create sales + sale_items so stock decrements and revenue counts.
+    const { data: sale, error: sErr } = await supabase.from("sales").insert({
+      sale_type: "wholesale",
+      customer_name: order.wholesale_buyers?.name ?? "Buyer",
+      total, amount_paid: total, payment_method: method,
+      pharmacy_id: profile?.pharmacy_id,
+    }).select("id").single();
+    if (sErr) { toast.error(sErr.message); return; }
+    const rows = its.filter(i => i.drug_id).map(i => ({
+      sale_id: sale.id, drug_id: i.drug_id!, drug_name: i.drug_name,
+      quantity: i.approved_qty ?? i.requested_qty, unit_price: Number(i.unit_price),
+      subtotal: Number(i.subtotal), pharmacy_id: profile?.pharmacy_id,
+    }));
+    if (rows.length) await supabase.from("sale_items").insert(rows);
+    const { error: oErr } = await supabase.from("buyer_orders").update({
+      payment_status: "paid", status: "paid", amount_paid: total, payment_method: method,
+    }).eq("id", order.id);
+    if (oErr) { toast.error(oErr.message); return; }
+    toast.success("Payment recorded · invoice marked PAID");
+    load();
+  };
+
+  return (
+    <Card><CardContent className="p-5 space-y-4">
+      <div className="flex flex-wrap gap-3 items-end justify-between">
+        <div className="font-semibold">Buyer Orders</div>
+        <Input className="w-64" placeholder="Search buyer name / ID / phone / email…" value={search} onChange={e => setSearch(e.target.value)} />
+      </div>
+      <div className="flex flex-wrap items-end gap-2">
+        <div><Label className="text-xs">From</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
+        <div><Label className="text-xs">To</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
+        <Button size="sm" onClick={load}>Apply</Button>
+        <Button size="sm" variant="outline" onClick={() => { const t = todayISO(); setFrom(t); setTo(t); setTimeout(load, 0); }}>Today</Button>
+      </div>
+      <div className="space-y-4">
+        {filteredOrders.length === 0 && <p className="text-muted-foreground text-center py-6">No orders in range</p>}
+        {filteredOrders.map(o => (
+          <div key={o.id} className="border rounded-md p-3 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div className="font-semibold">{o.wholesale_buyers?.name ?? "Buyer"} <span className="text-xs text-muted-foreground">#{o.id.slice(0,8)}</span></div>
+                <div className="text-xs text-muted-foreground">{o.wholesale_buyers?.phone} · {o.wholesale_buyers?.email} · ID {o.wholesale_buyers?.id_number} · {new Date(o.created_at).toLocaleString()}</div>
+              </div>
+              <div className="flex gap-2 text-xs">
+                <span className="px-2 py-1 rounded bg-muted">{o.status}</span>
+                <span className={`px-2 py-1 rounded ${o.payment_status === "paid" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}`}>{o.payment_status}</span>
+              </div>
+            </div>
+            <Table>
+              <TableHeader><TableRow><TableHead>Drug</TableHead><TableHead className="text-right">Req</TableHead><TableHead className="text-right">Unit</TableHead><TableHead>Stock</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
+              <TableBody>
+                {(items[o.id] ?? []).map(it => (
+                  <ItemRow key={it.id} item={it} canEdit={o.status === "pending"} onDecide={decideItem} />
+                ))}
+              </TableBody>
+            </Table>
+            <div className="flex justify-end gap-2">
+              {o.status === "pending" && <Button size="sm" onClick={() => finalizeReview(o)}>Finalize review</Button>}
+              {o.status === "reviewed" && o.payment_status === "unpaid" && (
+                <PaymentReceive onPay={(m) => recordPayment(o, m)} total={Number(o.total)} />
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </CardContent></Card>
+  );
+}
+
+function ItemRow({ item, canEdit, onDecide }: { item: BOItem; canEdit: boolean; onDecide: (i: BOItem, s: "approved"|"rejected", q?: number, r?: string) => void }) {
+  const [aQ, setAQ] = useState(String(item.requested_qty));
+  const [reason, setReason] = useState("");
+  return (
+    <TableRow>
+      <TableCell>{item.drug_name}</TableCell>
+      <TableCell className="text-right">{item.requested_qty}</TableCell>
+      <TableCell className="text-right">KSh {Number(item.unit_price).toFixed(2)}</TableCell>
+      <TableCell className="text-xs">{item.flagged_out_of_stock ? <span className="text-destructive">out of stock</span> : <span className="text-green-600">in stock</span>}</TableCell>
+      <TableCell className="text-xs">
+        {item.status === "approved" && <span className="text-green-600">approved · {item.approved_qty}</span>}
+        {item.status === "rejected" && <span className="text-destructive">rejected{item.reject_reason ? `: ${item.reject_reason}` : ""}</span>}
+        {item.status === "pending" && <span className="text-amber-600">pending</span>}
+      </TableCell>
+      <TableCell className="text-right">
+        {canEdit && item.status === "pending" && (
+          <div className="flex gap-1 items-center justify-end">
+            <Input type="number" className="h-7 w-16" value={aQ} onChange={e => setAQ(e.target.value)} />
+            <Button size="sm" onClick={() => onDecide(item, "approved", Number(aQ))}>OK</Button>
+            <Input className="h-7 w-32" placeholder="reason" value={reason} onChange={e => setReason(e.target.value)} />
+            <Button size="sm" variant="outline" onClick={() => onDecide(item, "rejected", 0, reason)}>Reject</Button>
+          </div>
+        )}
+      </TableCell>
+    </TableRow>
+  );
+}
+
+function PaymentReceive({ total, onPay }: { total: number; onPay: (method: string) => void }) {
+  const [method, setMethod] = useState("Cash");
+  return (
+    <div className="flex gap-2 items-center">
+      <span className="text-sm">Total: <b>KSh {total.toFixed(2)}</b></span>
+      <Input className="h-8 w-32" value={method} onChange={e => setMethod(e.target.value)} placeholder="Cash / M-Pesa"/>
+      <Button size="sm" onClick={() => onPay(method)}>Mark Payment Received</Button>
+    </div>
+  );
+}

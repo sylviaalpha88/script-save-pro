@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export type Role = "admin" | "pharmacy" | "inventory" | "accountant";
+export type Role = "admin" | "pharmacy" | "inventory" | "accountant" | "buyer";
 export interface Profile {
   id: string;
   username: string;

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
+import { Pencil, Save, X, Lock } from "lucide-react";
 
 export const Route = createFileRoute("/accountant")({
   component: AccountantPage,
@@ -17,7 +18,13 @@ export const Route = createFileRoute("/accountant")({
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
-type Report = { id: string; report_date: string; cash: number; mpesa: number; total: number; notes: string | null; created_at: string };
+type Report = {
+  id: string; report_date: string; cash: number; mpesa: number; total: number;
+  notes: string | null; created_at: string;
+};
+
+const EDIT_WINDOW_MS = 5 * 60 * 60 * 1000;
+const canEdit = (createdAt: string) => Date.now() - new Date(createdAt).getTime() < EDIT_WINDOW_MS;
 
 function AccountantPage() {
   const { profile, loading } = useAuth();
@@ -38,19 +45,25 @@ function AccountantPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [busy, setBusy] = useState(false);
 
+  // Date range filter
+  const [from, setFrom] = useState(todayISO());
+  const [to, setTo] = useState(todayISO());
+
   const total = (Number(cash) || 0) + (Number(mpesa) || 0);
 
   const load = async () => {
     const { data, error } = await supabase
       .from("accountant_reports")
       .select("id, report_date, cash, mpesa, total, notes, created_at")
+      .gte("report_date", from)
+      .lte("report_date", to)
       .order("report_date", { ascending: false })
-      .limit(60);
+      .order("created_at", { ascending: false });
     if (error) { toast.error(error.message); return; }
     setReports((data as Report[]) ?? []);
   };
 
-  useEffect(() => { if (profile) load(); }, [profile]);
+  useEffect(() => { if (profile) load(); /* eslint-disable-next-line */ }, [profile]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,25 +113,69 @@ function AccountantPage() {
 
           <Card>
             <CardHeader><CardTitle>My Submitted Reports</CardTitle></CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader><TableRow><TableHead>Date</TableHead><TableHead className="text-right">Cash</TableHead><TableHead className="text-right">M-Pesa</TableHead><TableHead className="text-right">Total</TableHead></TableRow></TableHeader>
-                <TableBody>
-                  {reports.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No reports yet</TableCell></TableRow>}
-                  {reports.map(r => (
-                    <TableRow key={r.id}>
-                      <TableCell>{r.report_date}</TableCell>
-                      <TableCell className="text-right">KSh {Number(r.cash).toFixed(2)}</TableCell>
-                      <TableCell className="text-right">KSh {Number(r.mpesa).toFixed(2)}</TableCell>
-                      <TableCell className="text-right font-medium">KSh {Number(r.total).toFixed(2)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <CardContent className="space-y-3">
+              <div className="flex flex-wrap items-end gap-2">
+                <div><Label className="text-xs">From</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
+                <div><Label className="text-xs">To</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
+                <Button onClick={load} size="sm">Apply</Button>
+                <Button variant="outline" size="sm" onClick={() => { const t = todayISO(); setFrom(t); setTo(t); setTimeout(load, 0); }}>Today</Button>
+              </div>
+              <div className="border rounded-md overflow-x-auto">
+                <Table>
+                  <TableHeader><TableRow><TableHead>Date</TableHead><TableHead className="text-right">Cash</TableHead><TableHead className="text-right">M-Pesa</TableHead><TableHead className="text-right">Total</TableHead><TableHead></TableHead></TableRow></TableHeader>
+                  <TableBody>
+                    {reports.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">No reports in range</TableCell></TableRow>}
+                    {reports.map(r => <ReportRow key={r.id} r={r} onChanged={load} />)}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </div>
       )}
     </AppShell>
+  );
+}
+
+function ReportRow({ r, onChanged }: { r: Report; onChanged: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [cash, setCash] = useState(String(r.cash));
+  const [mpesa, setMpesa] = useState(String(r.mpesa));
+  const locked = !canEdit(r.created_at);
+  const total = (Number(cash) || 0) + (Number(mpesa) || 0);
+
+  const save = async () => {
+    const { error } = await supabase.from("accountant_reports").update({
+      cash: Number(cash) || 0, mpesa: Number(mpesa) || 0,
+      total: (Number(cash) || 0) + (Number(mpesa) || 0),
+    }).eq("id", r.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Updated");
+    setEditing(false); onChanged();
+  };
+
+  return (
+    <TableRow>
+      <TableCell>{r.report_date}</TableCell>
+      <TableCell className="text-right">
+        {editing ? <Input type="number" className="h-7 w-24 ml-auto" value={cash} onChange={e => setCash(e.target.value)} /> : `KSh ${Number(r.cash).toFixed(2)}`}
+      </TableCell>
+      <TableCell className="text-right">
+        {editing ? <Input type="number" className="h-7 w-24 ml-auto" value={mpesa} onChange={e => setMpesa(e.target.value)} /> : `KSh ${Number(r.mpesa).toFixed(2)}`}
+      </TableCell>
+      <TableCell className="text-right font-medium">KSh {(editing ? total : Number(r.total)).toFixed(2)}</TableCell>
+      <TableCell className="text-right">
+        {locked ? (
+          <span className="text-xs text-muted-foreground inline-flex items-center gap-1"><Lock className="h-3 w-3"/> locked</span>
+        ) : editing ? (
+          <div className="flex justify-end gap-1">
+            <Button size="sm" variant="ghost" onClick={save}><Save className="h-4 w-4 text-green-600"/></Button>
+            <Button size="sm" variant="ghost" onClick={() => { setEditing(false); setCash(String(r.cash)); setMpesa(String(r.mpesa)); }}><X className="h-4 w-4"/></Button>
+          </div>
+        ) : (
+          <Button size="sm" variant="ghost" onClick={() => setEditing(true)}><Pencil className="h-4 w-4"/></Button>
+        )}
+      </TableCell>
+    </TableRow>
   );
 }

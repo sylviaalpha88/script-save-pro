@@ -40,6 +40,7 @@ function Index() {
       else if (profile.role === "admin") navigate({ to: "/admin" });
       else if (profile.role === "inventory") navigate({ to: "/inventory" });
       else if (profile.role === "accountant") navigate({ to: "/accountant" });
+      else if (profile.role === "buyer") navigate({ to: "/buyer" });
       else navigate({ to: "/pharmacy" });
     }
   }, [loading, profile, navigate]);
@@ -90,11 +91,16 @@ function Index() {
             ))}
           </nav>
 
-          <Link to="/auth">
-            <Button variant="outline" size="sm" className="bg-white/10 text-white border-white/30 hover:bg-white/20 hover:text-white">
-              Login
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link to="/register">
+              <Button variant="secondary" size="sm" className="font-semibold">Register Here</Button>
+            </Link>
+            <Link to="/auth">
+              <Button variant="outline" size="sm" className="bg-white/10 text-white border-white/30 hover:bg-white/20 hover:text-white">
+                Login
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 text-center">
