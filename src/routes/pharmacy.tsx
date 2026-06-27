@@ -422,8 +422,6 @@ function DispensedPanel() {
 
 
 // =============== BUYER ACCOUNTS PANEL ===============
-import { useServerFn } from "@tanstack/react-start";
-import { registerBuyer } from "@/lib/buyer.functions";
 
 type WBuyer = {
   id: string; user_id: string | null; name: string; email: string | null;
