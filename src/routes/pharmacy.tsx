@@ -35,10 +35,14 @@ function PharmacyPage() {
             <TabsTrigger value="retail">Retail (Patients)</TabsTrigger>
             <TabsTrigger value="wholesale">Wholesale</TabsTrigger>
             <TabsTrigger value="dispensed">Dispensed</TabsTrigger>
+            <TabsTrigger value="buyers">Buyer Accounts</TabsTrigger>
+            <TabsTrigger value="buyer_orders">Buyer Orders</TabsTrigger>
           </TabsList>
           <TabsContent value="retail"><RetailForm /></TabsContent>
           <TabsContent value="wholesale"><WholesaleForm /></TabsContent>
           <TabsContent value="dispensed"><DispensedPanel /></TabsContent>
+          <TabsContent value="buyers"><BuyersPanel /></TabsContent>
+          <TabsContent value="buyer_orders"><BuyerOrdersPanel /></TabsContent>
         </Tabs>
 
       )}
