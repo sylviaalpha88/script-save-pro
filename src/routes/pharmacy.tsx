@@ -433,11 +433,14 @@ type WBuyer = {
 function BuyersPanel() {
   const { profile } = useAuth();
   const register = useServerFn(registerBuyer);
+  const drugs = useDrugs();
   const [buyers, setBuyers] = useState<WBuyer[]>([]);
   const [q, setQ] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", idNumber: "", phone: "", location: "", licenseNumber: "", email: "", password: "" });
   const [busy, setBusy] = useState(false);
+  const [orderFor, setOrderFor] = useState<WBuyer | null>(null);
+  const [orderItems, setOrderItems] = useState<LineItem[]>([]);
 
   const load = async () => {
     const { data } = await supabase.from("wholesale_buyers")
@@ -476,6 +479,33 @@ function BuyersPanel() {
     finally { setBusy(false); }
   };
 
+  const startOrder = (b: WBuyer) => {
+    if (b.status !== "approved") { toast.error("Approve buyer first"); return; }
+    setOrderFor(b); setOrderItems([]);
+  };
+
+  const submitOrder = async () => {
+    if (!orderFor || !profile?.pharmacy_id) return;
+    if (orderItems.length === 0) { toast.error("Add at least one drug"); return; }
+    const total = orderItems.reduce((a, b) => a + b.unit_price * b.quantity, 0);
+    const { data: order, error: oErr } = await supabase.from("buyer_orders").insert({
+      buyer_id: orderFor.id, pharmacy_id: profile.pharmacy_id,
+      total, status: "reviewed", payment_status: "unpaid",
+    }).select("id").single();
+    if (oErr) { toast.error(oErr.message); return; }
+    const rows = orderItems.map(it => ({
+      order_id: order.id, pharmacy_id: profile.pharmacy_id,
+      drug_id: it.drug_id, drug_name: it.drug_name,
+      requested_qty: it.quantity, approved_qty: it.quantity,
+      unit_price: it.unit_price, subtotal: it.unit_price * it.quantity,
+      status: "approved", flagged_out_of_stock: false,
+    }));
+    const { error: iErr } = await supabase.from("buyer_order_items").insert(rows);
+    if (iErr) { toast.error(iErr.message); return; }
+    toast.success("Order created · go to Buyer Orders to record payment");
+    setOrderFor(null); setOrderItems([]);
+  };
+
   return (
     <Card><CardContent className="p-5 space-y-4">
       <div className="flex flex-wrap gap-2 justify-between items-center">
@@ -497,6 +527,17 @@ function BuyersPanel() {
           <div className="sm:col-span-2"><Button type="submit" disabled={busy} className="w-full">{busy ? "Saving…" : "Create buyer account"}</Button></div>
         </form>
       )}
+      {orderFor && (
+        <div className="p-3 border rounded-md bg-muted/30 space-y-3">
+          <div className="flex justify-between items-center">
+            <div className="font-medium">New wholesale order for <span className="text-primary">{orderFor.name}</span></div>
+            <Button size="sm" variant="ghost" onClick={() => { setOrderFor(null); setOrderItems([]); }}>Close</Button>
+          </div>
+          <DrugPicker drugs={drugs} mode="wholesale" onAdd={(d, qty, unit_price) => setOrderItems(prev => [...prev, { drug_id: d.id, drug_name: d.name, unit_price, quantity: qty }])} />
+          <LineItemsTable items={orderItems} onRemove={(i) => setOrderItems(prev => prev.filter((_,idx) => idx !== i))} />
+          <Button onClick={submitOrder} disabled={orderItems.length === 0} className="w-full"><FileText className="h-4 w-4 mr-2"/>Create Order (await payment)</Button>
+        </div>
+      )}
       <div className="border rounded-md overflow-x-auto">
         <Table>
           <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Phone</TableHead><TableHead>ID</TableHead><TableHead>License</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
@@ -510,9 +551,10 @@ function BuyersPanel() {
                 <TableCell>{b.id_number}</TableCell>
                 <TableCell>{b.license_number}{b.license_pdf_path && <Button variant="link" size="sm" onClick={() => openLicense(b.license_pdf_path!)}>view PDF</Button>}</TableCell>
                 <TableCell><span className={b.status === "approved" ? "text-green-600" : b.status === "rejected" ? "text-destructive" : "text-amber-600"}>{b.status}</span></TableCell>
-                <TableCell className="text-right space-x-1">
+                <TableCell className="text-right space-x-1 whitespace-nowrap">
                   {b.status !== "approved" && <Button size="sm" onClick={() => setStatus(b.id, "approved")}>Approve</Button>}
                   {b.status !== "rejected" && <Button size="sm" variant="outline" onClick={() => setStatus(b.id, "rejected")}>Reject</Button>}
+                  {b.status === "approved" && <Button size="sm" variant="secondary" onClick={() => startOrder(b)}><Plus className="h-4 w-4 mr-1"/>Order</Button>}
                 </TableCell>
               </TableRow>
             ))}
