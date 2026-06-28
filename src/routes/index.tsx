@@ -92,9 +92,6 @@ function Index() {
           </nav>
 
           <div className="flex items-center gap-2">
-            <Link to="/register">
-              <Button variant="secondary" size="sm" className="font-semibold">Register Here</Button>
-            </Link>
             <Link to="/auth">
               <Button variant="outline" size="sm" className="bg-white/10 text-white border-white/30 hover:bg-white/20 hover:text-white">
                 Login
