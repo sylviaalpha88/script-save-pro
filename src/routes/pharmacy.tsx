@@ -434,6 +434,7 @@ type WBuyer = {
 function BuyersPanel() {
   const { profile } = useAuth();
   const register = useServerFn(registerBuyer);
+  const delBuyer = useServerFn(deleteBuyerAccount);
   const drugs = useDrugs();
   const [buyers, setBuyers] = useState<WBuyer[]>([]);
   const [q, setQ] = useState("");
