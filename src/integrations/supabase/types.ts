@@ -241,6 +241,57 @@ export type Database = {
           },
         ]
       }
+      order_tracking_events: {
+        Row: {
+          created_at: string
+          id: string
+          latitude: number | null
+          location_name: string | null
+          longitude: number | null
+          note: string | null
+          order_id: string
+          pharmacy_id: string
+          recorded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
+          note?: string | null
+          order_id: string
+          pharmacy_id: string
+          recorded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
+          note?: string | null
+          order_id?: string
+          pharmacy_id?: string
+          recorded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_tracking_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "buyer_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_tracking_events_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           age: number | null
@@ -278,19 +329,34 @@ export type Database = {
       }
       pharmacies: {
         Row: {
+          address: string | null
           created_at: string
+          email: string | null
           id: string
+          location: string | null
+          logo_path: string | null
           name: string
+          phone: string | null
         }
         Insert: {
+          address?: string | null
           created_at?: string
+          email?: string | null
           id?: string
+          location?: string | null
+          logo_path?: string | null
           name: string
+          phone?: string | null
         }
         Update: {
+          address?: string | null
           created_at?: string
+          email?: string | null
           id?: string
+          location?: string | null
+          logo_path?: string | null
           name?: string
+          phone?: string | null
         }
         Relationships: []
       }
@@ -548,7 +614,13 @@ export type Database = {
       is_director: { Args: { _uid: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "pharmacy" | "inventory" | "accountant" | "buyer"
+      app_role:
+        | "admin"
+        | "pharmacy"
+        | "inventory"
+        | "accountant"
+        | "buyer"
+        | "order_track"
       drug_unit: "tab" | "cap" | "piece"
       sale_type: "retail" | "wholesale"
     }
@@ -678,7 +750,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "pharmacy", "inventory", "accountant", "buyer"],
+      app_role: [
+        "admin",
+        "pharmacy",
+        "inventory",
+        "accountant",
+        "buyer",
+        "order_track",
+      ],
       drug_unit: ["tab", "cap", "piece"],
       sale_type: ["retail", "wholesale"],
     },
