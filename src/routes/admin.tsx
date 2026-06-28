@@ -320,6 +320,7 @@ function UsersPanel() {
                   <SelectItem value="pharmacy">Pharmacy</SelectItem>
                   <SelectItem value="inventory">Inventory</SelectItem>
                   <SelectItem value="accountant">Accountant</SelectItem>
+                  <SelectItem value="order_track">Order Track (Delivery)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
