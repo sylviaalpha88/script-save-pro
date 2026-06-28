@@ -274,3 +274,66 @@ function OrderHistory({ buyer }: { buyer: Buyer }) {
     </div>
   );
 }
+
+type Trk = { id: string; order_id: string; location_name: string | null; latitude: number | null; longitude: number | null; note: string | null; created_at: string };
+
+function OrderTrack({ buyer }: { buyer: Buyer }) {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [events, setEvents] = useState<Trk[]>([]);
+  const [orderId, setOrderId] = useState<string>("");
+
+  useEffect(() => {
+    supabase.from("buyer_orders").select("id, created_at, status, payment_status, total, amount_paid")
+      .eq("buyer_id", buyer.id).order("created_at", { ascending: false })
+      .then(({ data }) => {
+        const list = (data as Order[]) ?? [];
+        setOrders(list);
+        if (list.length && !orderId) setOrderId(list[0].id);
+      });
+    // eslint-disable-next-line
+  }, [buyer.id]);
+
+  useEffect(() => {
+    if (!orderId) { setEvents([]); return; }
+    const load = () => supabase.from("order_tracking_events")
+      .select("id, order_id, location_name, latitude, longitude, note, created_at")
+      .eq("order_id", orderId).order("created_at", { ascending: false })
+      .then(({ data }) => setEvents((data as Trk[]) ?? []));
+    load();
+    const ch = supabase.channel(`trk-${orderId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "order_tracking_events", filter: `order_id=eq.${orderId}` }, load)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [orderId]);
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>Track your delivery</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <div>
+          <Label className="text-xs">Order</Label>
+          <select className="w-full border rounded-md p-2 bg-background" value={orderId} onChange={e => setOrderId(e.target.value)}>
+            <option value="">Select order…</option>
+            {orders.map(o => <option key={o.id} value={o.id}>#{o.id.slice(0,8)} · {new Date(o.created_at).toLocaleDateString()} · {o.payment_status}</option>)}
+          </select>
+        </div>
+        {orderId && events.length === 0 && <p className="text-muted-foreground text-center py-6 text-sm">No tracking updates yet for this order.</p>}
+        <ol className="relative border-l-2 border-primary/30 ml-3 space-y-4">
+          {events.map(e => (
+            <li key={e.id} className="ml-4">
+              <span className="absolute -left-2 h-4 w-4 rounded-full bg-primary"></span>
+              <div className="text-xs text-muted-foreground">{new Date(e.created_at).toLocaleString()}</div>
+              <div className="font-medium">{e.location_name ?? "Location update"}</div>
+              {e.latitude != null && e.longitude != null && (
+                <a className="text-xs text-primary underline" target="_blank" rel="noreferrer" href={`https://maps.google.com/?q=${e.latitude},${e.longitude}`}>
+                  View on map ({e.latitude.toFixed(4)}, {e.longitude.toFixed(4)})
+                </a>
+              )}
+              {e.note && <div className="text-xs text-muted-foreground mt-1">{e.note}</div>}
+            </li>
+          ))}
+        </ol>
+      </CardContent>
+    </Card>
+  );
+}
