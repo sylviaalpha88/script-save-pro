@@ -254,7 +254,14 @@ function OrderHistory({ buyer }: { buyer: Buyer }) {
                 </TableBody>
               </Table>
               {reviewed && (
-                <div className="flex justify-end text-sm">
+                <div className="flex justify-between items-center text-sm">
+                  <span>
+                    {o.payment_status === "paid" && (
+                      <Link to="/buyer-invoice/$id" params={{ id: o.id }} className="text-primary underline font-medium">
+                        Download / view invoice
+                      </Link>
+                    )}
+                  </span>
                   <span className="font-semibold">Approved total: KSh {approvedTotal.toFixed(2)}</span>
                 </div>
               )}
