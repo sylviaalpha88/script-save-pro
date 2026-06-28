@@ -53,11 +53,13 @@ function AdminPage() {
             <TabsTrigger value="history">Per-Item History</TabsTrigger>
             <TabsTrigger value="reconcile">Reconciliation</TabsTrigger>
             <TabsTrigger value="users">Manage Users</TabsTrigger>
+            <TabsTrigger value="info">Pharmacy Info</TabsTrigger>
           </TabsList>
           <TabsContent value="sales"><SalesPanel /></TabsContent>
           <TabsContent value="history"><PerItemHistory /></TabsContent>
           <TabsContent value="reconcile"><ReconciliationPanel /></TabsContent>
           <TabsContent value="users"><UsersPanel /></TabsContent>
+          <TabsContent value="info"><PharmacyInfoPanel /></TabsContent>
         </Tabs>
       )}
     </AppShell>
