@@ -279,7 +279,7 @@ function UsersPanel() {
   const [users, setUsers] = useState<Profile[]>([]);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"pharmacy" | "inventory" | "accountant">("pharmacy");
+  const [role, setRole] = useState<"pharmacy" | "inventory" | "accountant" | "order_track">("pharmacy");
   const create = useServerFn(createStaffUser);
   const del = useServerFn(deleteStaffUser);
 
