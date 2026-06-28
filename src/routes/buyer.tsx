@@ -72,9 +72,11 @@ function BuyerPage() {
             <TabsList>
               <TabsTrigger value="order">Place New Order</TabsTrigger>
               <TabsTrigger value="history">My Orders</TabsTrigger>
+              <TabsTrigger value="track">Order Track</TabsTrigger>
             </TabsList>
             <TabsContent value="order"><PlaceOrder buyer={buyer} /></TabsContent>
             <TabsContent value="history"><OrderHistory buyer={buyer} /></TabsContent>
+            <TabsContent value="track"><OrderTrack buyer={buyer} /></TabsContent>
           </Tabs>
         )}
       </main>
