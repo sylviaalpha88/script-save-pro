@@ -1,0 +1,139 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/integrations/supabase/client";
+import { AppShell } from "@/components/AppShell";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import { MapPin, Navigation } from "lucide-react";
+
+export const Route = createFileRoute("/order-track")({
+  component: OrderTrackPage,
+});
+
+type Order = { id: string; created_at: string; status: string; payment_status: string; total: number; wholesale_buyers: { name: string; phone: string | null } | null };
+type Ev = { id: string; order_id: string; location_name: string | null; latitude: number | null; longitude: number | null; note: string | null; created_at: string };
+
+function OrderTrackPage() {
+  const { profile, loading } = useAuth();
+  const navigate = useNavigate();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [events, setEvents] = useState<Ev[]>([]);
+  const [orderId, setOrderId] = useState<string>("");
+  const [locName, setLocName] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (loading) return;
+    if (!profile) { navigate({ to: "/auth" }); return; }
+    if (!["order_track", "admin", "pharmacy"].includes(profile.role)) { navigate({ to: "/" }); return; }
+    loadOrders();
+  }, [profile, loading]);
+
+  const loadOrders = async () => {
+    const { data } = await supabase.from("buyer_orders")
+      .select("id, created_at, status, payment_status, total, wholesale_buyers(name, phone)")
+      .order("created_at", { ascending: false }).limit(50);
+    setOrders((data as any) ?? []);
+  };
+
+  const loadEvents = async (oid: string) => {
+    const { data } = await supabase.from("order_tracking_events")
+      .select("id, order_id, location_name, latitude, longitude, note, created_at")
+      .eq("order_id", oid).order("created_at", { ascending: false });
+    setEvents((data as Ev[]) ?? []);
+  };
+
+  useEffect(() => { if (orderId) loadEvents(orderId); else setEvents([]); }, [orderId]);
+
+  const recordEvent = async (payload: { location_name?: string | null; latitude?: number | null; longitude?: number | null; note?: string | null }) => {
+    if (!orderId) { toast.error("Select an order"); return; }
+    if (!profile?.pharmacy_id) { toast.error("No pharmacy linked"); return; }
+    setBusy(true);
+    const { error } = await supabase.from("order_tracking_events").insert({
+      order_id: orderId, pharmacy_id: profile.pharmacy_id, recorded_by: profile.id,
+      ...payload,
+    });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Tracking point added");
+    setLocName(""); setNote("");
+    loadEvents(orderId);
+  };
+
+  const sendGps = () => {
+    if (!("geolocation" in navigator)) { toast.error("GPS not available"); return; }
+    navigator.geolocation.getCurrentPosition(
+      (p) => recordEvent({ latitude: p.coords.latitude, longitude: p.coords.longitude, location_name: locName || null, note: note || null }),
+      (err) => toast.error(err.message),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const sendName = () => {
+    if (!locName.trim()) { toast.error("Enter location name"); return; }
+    recordEvent({ location_name: locName.trim(), note: note || null });
+  };
+
+  return (
+    <AppShell title="Order Track" nav={[{ to: "/order-track", label: "Order Track" }]}>
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Navigation className="h-5 w-5"/>Record Tracking Point</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <Label>Select order</Label>
+              <Select value={orderId} onValueChange={setOrderId}>
+                <SelectTrigger><SelectValue placeholder="Choose order"/></SelectTrigger>
+                <SelectContent>
+                  {orders.map(o => (
+                    <SelectItem key={o.id} value={o.id}>
+                      #{o.id.slice(0,8)} · {o.wholesale_buyers?.name ?? "Buyer"} · {new Date(o.created_at).toLocaleDateString()}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>Location name (e.g. Nakuru CBD)</Label><Input value={locName} onChange={e => setLocName(e.target.value)} placeholder="Type current location" /></div>
+            <div><Label>Note (optional)</Label><Textarea rows={2} value={note} onChange={e => setNote(e.target.value)} /></div>
+            <div className="flex gap-2">
+              <Button onClick={sendGps} disabled={busy || !orderId} className="flex-1"><Navigation className="h-4 w-4 mr-1"/>Send GPS</Button>
+              <Button onClick={sendName} disabled={busy || !orderId} variant="secondary" className="flex-1"><MapPin className="h-4 w-4 mr-1"/>Save location name</Button>
+            </div>
+            <p className="text-xs text-muted-foreground">GPS uses your device's geolocation. Each entry is timestamped and visible to the buyer in real time.</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle>Tracking History {orderId && `(#${orderId.slice(0,8)})`}</CardTitle></CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader><TableRow><TableHead>Time</TableHead><TableHead>Location</TableHead><TableHead>GPS</TableHead><TableHead>Note</TableHead></TableRow></TableHeader>
+              <TableBody>
+                {events.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No tracking points yet</TableCell></TableRow>}
+                {events.map(e => (
+                  <TableRow key={e.id}>
+                    <TableCell className="text-xs">{new Date(e.created_at).toLocaleString()}</TableCell>
+                    <TableCell>{e.location_name ?? "—"}</TableCell>
+                    <TableCell className="text-xs">{e.latitude != null && e.longitude != null ? (
+                      <a className="text-primary underline" href={`https://maps.google.com/?q=${e.latitude},${e.longitude}`} target="_blank" rel="noreferrer">
+                        {e.latitude.toFixed(4)}, {e.longitude.toFixed(4)}
+                      </a>
+                    ) : "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{e.note ?? "—"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    </AppShell>
+  );
+}
