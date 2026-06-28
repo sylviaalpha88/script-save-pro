@@ -173,11 +173,11 @@ export const deletePharmacyAdmin = createServerFn({ method: "POST" })
 
 export const createStaffUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { username: string; password: string; role: "pharmacy" | "inventory" | "accountant" }) =>
+  .inputValidator((d: { username: string; password: string; role: "pharmacy" | "inventory" | "accountant" | "order_track" }) =>
     z.object({
       username: z.string().min(2).max(50),
       password: z.string().min(6).max(100),
-      role: z.enum(["pharmacy", "inventory", "accountant"]),
+      role: z.enum(["pharmacy", "inventory", "accountant", "order_track"]),
     }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: me } = await context.supabase
@@ -236,5 +236,35 @@ export const deleteStaffUser = createServerFn({ method: "POST" })
     }
     await supabaseAdmin.from("profiles").delete().eq("id", data.userId);
     await supabaseAdmin.auth.admin.deleteUser(data.userId).catch(() => {});
+    return { ok: true };
+  });
+
+// Delete a wholesale buyer account (auth user + wholesale_buyers row cascades the orders)
+export const deleteBuyerAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { buyerId: string }) =>
+    z.object({ buyerId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: me } = await context.supabase
+      .from("profiles")
+      .select("role, pharmacy_id, is_director")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (!me || (me.role !== "admin" && me.role !== "pharmacy")) throw new Error("Forbidden");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: buyer } = await supabaseAdmin
+      .from("wholesale_buyers")
+      .select("id, user_id, pharmacy_id")
+      .eq("id", data.buyerId)
+      .maybeSingle();
+    if (!buyer) throw new Error("Buyer not found");
+    if (!me.is_director && buyer.pharmacy_id !== me.pharmacy_id) throw new Error("Forbidden");
+
+    await supabaseAdmin.from("wholesale_buyers").delete().eq("id", buyer.id);
+    if (buyer.user_id) {
+      await supabaseAdmin.from("profiles").delete().eq("id", buyer.user_id);
+      await supabaseAdmin.auth.admin.deleteUser(buyer.user_id).catch(() => {});
+    }
     return { ok: true };
   });

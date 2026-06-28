@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { registerBuyer } from "@/lib/buyer.functions";
+import { deleteBuyerAccount } from "@/lib/admin.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -433,6 +434,7 @@ type WBuyer = {
 function BuyersPanel() {
   const { profile } = useAuth();
   const register = useServerFn(registerBuyer);
+  const delBuyer = useServerFn(deleteBuyerAccount);
   const drugs = useDrugs();
   const [buyers, setBuyers] = useState<WBuyer[]>([]);
   const [q, setQ] = useState("");
@@ -556,6 +558,11 @@ function BuyersPanel() {
                   {b.status !== "approved" && <Button size="sm" onClick={() => setStatus(b.id, "approved")}>Approve</Button>}
                   {b.status !== "rejected" && <Button size="sm" variant="outline" onClick={() => setStatus(b.id, "rejected")}>Reject</Button>}
                   {b.status === "approved" && <Button size="sm" variant="secondary" onClick={() => startOrder(b)}><Plus className="h-4 w-4 mr-1"/>Order</Button>}
+                  <Button size="sm" variant="ghost" onClick={async () => {
+                    if (!confirm(`Delete buyer ${b.name}? This removes their login and order history.`)) return;
+                    try { await delBuyer({ data: { buyerId: b.id } }); toast.success("Buyer deleted"); load(); }
+                    catch (e) { toast.error((e as Error).message); }
+                  }}><Trash2 className="h-4 w-4 text-destructive"/></Button>
                 </TableCell>
               </TableRow>
             ))}

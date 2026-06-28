@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,6 +21,7 @@ const BASE_ADMIN_NAV = [
   { to: "/pharmacy", label: "Pharmacy" },
   { to: "/inventory", label: "Inventory" },
   { to: "/accountant", label: "Accountant" },
+  { to: "/order-track", label: "Order Track" },
 ];
 
 export const Route = createFileRoute("/admin")({
@@ -53,11 +55,13 @@ function AdminPage() {
             <TabsTrigger value="history">Per-Item History</TabsTrigger>
             <TabsTrigger value="reconcile">Reconciliation</TabsTrigger>
             <TabsTrigger value="users">Manage Users</TabsTrigger>
+            <TabsTrigger value="info">Pharmacy Info</TabsTrigger>
           </TabsList>
           <TabsContent value="sales"><SalesPanel /></TabsContent>
           <TabsContent value="history"><PerItemHistory /></TabsContent>
           <TabsContent value="reconcile"><ReconciliationPanel /></TabsContent>
           <TabsContent value="users"><UsersPanel /></TabsContent>
+          <TabsContent value="info"><PharmacyInfoPanel /></TabsContent>
         </Tabs>
       )}
     </AppShell>
@@ -276,7 +280,7 @@ function UsersPanel() {
   const [users, setUsers] = useState<Profile[]>([]);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"pharmacy" | "inventory" | "accountant">("pharmacy");
+  const [role, setRole] = useState<"pharmacy" | "inventory" | "accountant" | "order_track">("pharmacy");
   const create = useServerFn(createStaffUser);
   const del = useServerFn(deleteStaffUser);
 
@@ -317,6 +321,7 @@ function UsersPanel() {
                   <SelectItem value="pharmacy">Pharmacy</SelectItem>
                   <SelectItem value="inventory">Inventory</SelectItem>
                   <SelectItem value="accountant">Accountant</SelectItem>
+                  <SelectItem value="order_track">Order Track (Delivery)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -476,5 +481,76 @@ function ReconciliationPanel() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// =============== Pharmacy Info Panel ===============
+type PharmacyRow = { id: string; name: string; phone: string | null; email: string | null; address: string | null; location: string | null; logo_path: string | null };
+
+function PharmacyInfoPanel() {
+  const { profile } = useAuth();
+  const [row, setRow] = useState<PharmacyRow | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = async () => {
+    if (!profile?.pharmacy_id) return;
+    const { data } = await supabase.from("pharmacies")
+      .select("id, name, phone, email, address, location, logo_path")
+      .eq("id", profile.pharmacy_id).maybeSingle();
+    setRow(data as PharmacyRow);
+    if (data?.logo_path) {
+      const { data: signed } = await supabase.storage.from("pharmacy-logos").createSignedUrl(data.logo_path, 3600);
+      setLogoUrl(signed?.signedUrl ?? null);
+    } else setLogoUrl(null);
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [profile?.pharmacy_id]);
+
+  if (!profile?.pharmacy_id) return <p className="text-muted-foreground">No pharmacy linked to your account.</p>;
+  if (!row) return <p className="text-muted-foreground">Loading…</p>;
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    const { error } = await supabase.from("pharmacies").update({
+      name: row.name, phone: row.phone, email: row.email, address: row.address, location: row.location,
+    }).eq("id", row.id);
+    setBusy(false);
+    if (error) toast.error(error.message); else toast.success("Pharmacy info saved");
+  };
+
+  const uploadLogo = async (file: File) => {
+    setBusy(true);
+    const path = `${row.id}/logo-${Date.now()}-${file.name}`;
+    const { error: upErr } = await supabase.storage.from("pharmacy-logos").upload(path, file, { upsert: true });
+    if (upErr) { setBusy(false); toast.error(upErr.message); return; }
+    const { error: dbErr } = await supabase.from("pharmacies").update({ logo_path: path }).eq("id", row.id);
+    setBusy(false);
+    if (dbErr) { toast.error(dbErr.message); return; }
+    toast.success("Logo uploaded");
+    load();
+  };
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>Pharmacy Information</CardTitle></CardHeader>
+      <CardContent>
+        <form onSubmit={save} className="grid sm:grid-cols-2 gap-4">
+          <div className="sm:col-span-2 flex items-center gap-4">
+            {logoUrl ? <img src={logoUrl} alt="logo" className="h-20 w-20 rounded-lg object-cover border"/> : <div className="h-20 w-20 rounded-lg border bg-muted flex items-center justify-center text-xs text-muted-foreground">No logo</div>}
+            <div>
+              <Label className="text-xs">Pharmacy Logo</Label>
+              <Input type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f); }} />
+            </div>
+          </div>
+          <div><Label>Pharmacy name</Label><Input value={row.name ?? ""} onChange={e => setRow({...row, name: e.target.value})} required/></div>
+          <div><Label>Phone</Label><Input value={row.phone ?? ""} onChange={e => setRow({...row, phone: e.target.value})}/></div>
+          <div><Label>Email</Label><Input type="email" value={row.email ?? ""} onChange={e => setRow({...row, email: e.target.value})}/></div>
+          <div><Label>Location</Label><Input value={row.location ?? ""} onChange={e => setRow({...row, location: e.target.value})} placeholder="Town / county"/></div>
+          <div className="sm:col-span-2"><Label>Address</Label><Textarea rows={2} value={row.address ?? ""} onChange={e => setRow({...row, address: e.target.value})}/></div>
+          <div className="sm:col-span-2"><Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save pharmacy info"}</Button></div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
