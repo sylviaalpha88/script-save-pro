@@ -263,7 +263,7 @@ export const deleteBuyerAccount = createServerFn({ method: "POST" })
 
     await supabaseAdmin.from("wholesale_buyers").delete().eq("id", buyer.id);
     if (buyer.user_id) {
-      await supabaseAdmin.from("profiles").delete().eq("id", buyer.user_id).catch(() => {});
+      await supabaseAdmin.from("profiles").delete().eq("id", buyer.user_id);
       await supabaseAdmin.auth.admin.deleteUser(buyer.user_id).catch(() => {});
     }
     return { ok: true };
