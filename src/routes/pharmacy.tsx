@@ -486,15 +486,16 @@ function BuyersPanel() {
 
   const submitOrder = async () => {
     if (!orderFor || !profile?.pharmacy_id) return;
+    const pharmacyId = profile.pharmacy_id;
     if (orderItems.length === 0) { toast.error("Add at least one drug"); return; }
     const total = orderItems.reduce((a, b) => a + b.unit_price * b.quantity, 0);
     const { data: order, error: oErr } = await supabase.from("buyer_orders").insert({
-      buyer_id: orderFor.id, pharmacy_id: profile.pharmacy_id,
+      buyer_id: orderFor.id, pharmacy_id: pharmacyId,
       total, status: "reviewed", payment_status: "unpaid",
     }).select("id").single();
     if (oErr) { toast.error(oErr.message); return; }
     const rows = orderItems.map(it => ({
-      order_id: order.id, pharmacy_id: profile.pharmacy_id,
+      order_id: order.id, pharmacy_id: pharmacyId,
       drug_id: it.drug_id, drug_name: it.drug_name,
       requested_qty: it.quantity, approved_qty: it.quantity,
       unit_price: it.unit_price, subtotal: it.unit_price * it.quantity,
