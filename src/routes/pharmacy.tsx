@@ -698,7 +698,17 @@ function BuyerOrdersPanel() {
                 ))}
               </TableBody>
             </Table>
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-2 items-center flex-wrap">
+              {(o.status === "reviewed" || o.status === "paid") && (
+                <Link
+                  to="/buyer-invoice/$id"
+                  params={{ id: o.id }}
+                  target="_blank"
+                  className={`text-xs underline font-medium ${o.payment_status === "paid" ? "text-green-700" : "text-amber-700"}`}
+                >
+                  {o.payment_status === "paid" ? "View / print PAID invoice" : "View / print PENDING invoice"}
+                </Link>
+              )}
               {o.status === "pending" && <Button size="sm" onClick={() => finalizeReview(o)}>Finalize review</Button>}
               {o.status === "reviewed" && o.payment_status === "unpaid" && (
                 <PaymentReceive onPay={(m) => recordPayment(o, m)} total={Number(o.total)} />
