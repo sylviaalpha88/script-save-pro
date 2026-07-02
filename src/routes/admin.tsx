@@ -281,8 +281,13 @@ function UsersPanel() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"pharmacy" | "inventory" | "accountant" | "order_track">("pharmacy");
+  const [search, setSearch] = useState("");
   const create = useServerFn(createStaffUser);
   const del = useServerFn(deleteStaffUser);
+
+  const filteredUsers = search.trim()
+    ? users.filter(u => [u.username, u.role].some(v => (v ?? "").toLowerCase().includes(search.toLowerCase())))
+    : users;
 
   const load = async () => {
     // RLS scopes this to the admin's own pharmacy; hide other admins (you only manage your staff).
@@ -331,11 +336,13 @@ function UsersPanel() {
       </Card>
       <Card>
         <CardHeader><CardTitle>All Users</CardTitle></CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          <Input placeholder="Search users by name or role…" value={search} onChange={e => setSearch(e.target.value)} />
           <Table>
             <TableHeader><TableRow><TableHead>Username</TableHead><TableHead>Role</TableHead><TableHead></TableHead></TableRow></TableHeader>
             <TableBody>
-              {users.map(u => (
+              {filteredUsers.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground text-sm">No users match your search.</TableCell></TableRow>}
+              {filteredUsers.map(u => (
                 <TableRow key={u.id}>
                   <TableCell className="font-medium">{u.username}</TableCell>
                   <TableCell className="capitalize">{u.role}</TableCell>
