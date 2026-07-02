@@ -281,8 +281,13 @@ function UsersPanel() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"pharmacy" | "inventory" | "accountant" | "order_track">("pharmacy");
+  const [search, setSearch] = useState("");
   const create = useServerFn(createStaffUser);
   const del = useServerFn(deleteStaffUser);
+
+  const filteredUsers = search.trim()
+    ? users.filter(u => [u.username, u.role].some(v => (v ?? "").toLowerCase().includes(search.toLowerCase())))
+    : users;
 
   const load = async () => {
     // RLS scopes this to the admin's own pharmacy; hide other admins (you only manage your staff).
