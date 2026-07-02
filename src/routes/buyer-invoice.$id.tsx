@@ -1,11 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import QRCode from "qrcode";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pill, Printer, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { getBuyerInvoicePublic } from "@/lib/buyer.functions";
 
 export const Route = createFileRoute("/buyer-invoice/$id")({
   component: BuyerInvoicePage,
@@ -22,43 +23,40 @@ type Pharmacy = { name: string; phone: string | null; email: string | null; addr
 function BuyerInvoicePage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
-  const { profile, loading } = useAuth();
+  const { profile } = useAuth();
+  const fetchInvoice = useServerFn(getBuyerInvoicePublic);
   const [order, setOrder] = useState<Order | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [pharmacy, setPharmacy] = useState<Pharmacy | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
+  // Auto-print when opened via a QR scan (?auto=1). No login required.
+  const autoPrint = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("auto") === "1";
+
   useEffect(() => {
-    if (!loading && !profile) { navigate({ to: "/auth" }); return; }
     (async () => {
-      const { data: o } = await supabase.from("buyer_orders")
-        .select("id, created_at, total, amount_paid, payment_status, payment_method, pharmacy_id, wholesale_buyers(name, phone, email, id_number, location)")
-        .eq("id", id).maybeSingle();
-      setOrder(o as unknown as Order);
-      const { data: its } = await supabase.from("buyer_order_items")
-        .select("drug_name, approved_qty, requested_qty, unit_price, subtotal, status")
-        .eq("order_id", id).eq("status", "approved");
-      setItems((its as Item[]) ?? []);
-      if (o?.pharmacy_id) {
-        const { data: ph } = await supabase.from("pharmacies")
-          .select("name, phone, email, address, location, logo_path")
-          .eq("id", o.pharmacy_id).maybeSingle();
-        if (ph) {
-          setPharmacy(ph as Pharmacy);
-          if (ph.logo_path) {
-            const { data: s } = await supabase.storage.from("pharmacy-logos").createSignedUrl(ph.logo_path, 3600);
-            setLogoUrl(s?.signedUrl ?? null);
-          }
-        }
-      }
       try {
-        const url = typeof window !== "undefined" ? window.location.href : "";
-        const qr = await QRCode.toDataURL(url, { margin: 1, width: 160 });
+        const res = await fetchInvoice({ data: { orderId: id } });
+        setOrder(res.order as unknown as Order);
+        setItems(res.items as Item[]);
+        setPharmacy((res.pharmacy as Pharmacy) ?? null);
+        setLogoUrl(res.logoUrl);
+      } catch { /* ignore */ }
+      try {
+        // The QR always points at the auto-print variant so scanning downloads/prints directly.
+        const base = typeof window !== "undefined" ? window.location.origin + window.location.pathname : "";
+        const qr = await QRCode.toDataURL(`${base}?auto=1`, { margin: 1, width: 160 });
         setQrDataUrl(qr);
       } catch { /* ignore */ }
     })();
-  }, [id, loading, profile, navigate]);
+  }, [id, fetchInvoice]);
+
+  useEffect(() => {
+    if (!autoPrint || !order || !pharmacy) return;
+    const t = setTimeout(() => window.print(), 600);
+    return () => clearTimeout(t);
+  }, [autoPrint, order, pharmacy]);
 
   if (!order) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading invoice…</div>;
 
@@ -90,7 +88,7 @@ function BuyerInvoicePage() {
     <div className="mt-10 pt-4 border-t flex items-end justify-between gap-4">
       <div className="text-xs text-muted-foreground max-w-[60%]">
         <div className="font-semibold text-foreground mb-1">Scan to download / view this invoice</div>
-        Scan the QR code with any smartphone camera. It opens this exact invoice page where you can print or save as PDF.
+        Scan the QR code with any smartphone camera. It opens this exact invoice and automatically triggers the PDF download — no login needed.
       </div>
       {qrDataUrl && (
         <div className="text-center">
@@ -122,7 +120,6 @@ function BuyerInvoicePage() {
         }
       `}</style>
 
-      {/* Repeating print header (logo far left, pharmacy info far right) */}
       <div className="print-fixed-header hidden print:flex">
         <div>
           {logoUrl
@@ -138,7 +135,6 @@ function BuyerInvoicePage() {
         </div>
       </div>
 
-      {/* Repeating print footer QR */}
       <div className="print-fixed-footer hidden print:flex">
         <div>Scan QR to download this invoice PDF</div>
         {qrDataUrl && <img src={qrDataUrl} alt="" style={{ height: 70, width: 70 }} />}
@@ -146,7 +142,9 @@ function BuyerInvoicePage() {
 
       <div className="max-w-3xl mx-auto">
         <div className="flex justify-between mb-4 print:hidden">
-          <Button variant="outline" onClick={() => navigate({ to: back })}><ArrowLeft className="h-4 w-4 mr-2"/>Back</Button>
+          {profile ? (
+            <Button variant="outline" onClick={() => navigate({ to: back })}><ArrowLeft className="h-4 w-4 mr-2"/>Back</Button>
+          ) : <span />}
           <Button onClick={() => window.print()}><Printer className="h-4 w-4 mr-2"/>Print / Download PDF</Button>
         </div>
         <Card className="print:shadow-none print:border-0">
