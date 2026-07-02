@@ -336,11 +336,13 @@ function UsersPanel() {
       </Card>
       <Card>
         <CardHeader><CardTitle>All Users</CardTitle></CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          <Input placeholder="Search users by name or role…" value={search} onChange={e => setSearch(e.target.value)} />
           <Table>
             <TableHeader><TableRow><TableHead>Username</TableHead><TableHead>Role</TableHead><TableHead></TableHead></TableRow></TableHeader>
             <TableBody>
-              {users.map(u => (
+              {filteredUsers.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground text-sm">No users match your search.</TableCell></TableRow>}
+              {filteredUsers.map(u => (
                 <TableRow key={u.id}>
                   <TableCell className="font-medium">{u.username}</TableCell>
                   <TableCell className="capitalize">{u.role}</TableCell>
