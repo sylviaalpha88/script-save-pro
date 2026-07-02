@@ -9,6 +9,31 @@ export const listPharmaciesPublic = createServerFn({ method: "GET" }).handler(as
   return data ?? [];
 });
 
+// Public: fetch a wholesale invoice (order + items + pharmacy) by order id.
+// Used by the QR-scanned invoice URL so it opens without a login.
+export const getBuyerInvoicePublic = createServerFn({ method: "GET" })
+  .inputValidator((d: { orderId: string }) => z.object({ orderId: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: order, error } = await supabaseAdmin.from("buyer_orders")
+      .select("id, created_at, total, amount_paid, payment_status, payment_method, pharmacy_id, wholesale_buyers(name, phone, email, id_number, location)")
+      .eq("id", data.orderId).maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!order) throw new Error("Invoice not found");
+    const { data: items } = await supabaseAdmin.from("buyer_order_items")
+      .select("drug_name, approved_qty, requested_qty, unit_price, subtotal, status")
+      .eq("order_id", data.orderId).eq("status", "approved");
+    const { data: pharmacy } = await supabaseAdmin.from("pharmacies")
+      .select("name, phone, email, address, location, logo_path")
+      .eq("id", order.pharmacy_id).maybeSingle();
+    let logoUrl: string | null = null;
+    if (pharmacy?.logo_path) {
+      const { data: signed } = await supabaseAdmin.storage.from("pharmacy-logos").createSignedUrl(pharmacy.logo_path, 3600);
+      logoUrl = signed?.signedUrl ?? null;
+    }
+    return { order, items: items ?? [], pharmacy, logoUrl };
+  });
+
 // Public: register a wholesale buyer. Creates auth user + profile (role=buyer) + wholesale_buyers row (pending).
 export const registerBuyer = createServerFn({ method: "POST" })
   .inputValidator((d: {
