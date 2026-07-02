@@ -211,7 +211,17 @@ function OrderHistory({ buyer }: { buyer: Buyer }) {
       setItemsByOrder(grouped);
     }
   };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [buyer.id]);
+  useEffect(() => {
+    load();
+    // Realtime: any new/updated order or item for this buyer refreshes the list,
+    // so orders created by pharmacy staff appear automatically without a reload.
+    const ch = supabase.channel(`buyer-orders-${buyer.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "buyer_orders", filter: `buyer_id=eq.${buyer.id}` }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "buyer_order_items" }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+    // eslint-disable-next-line
+  }, [buyer.id]);
 
   return (
     <div className="space-y-4">
