@@ -24,6 +24,7 @@ const LABELS: Record<string, string> = {
 
 function Index() {
   const { loading, profile } = useAuth();
+  const branding = useSiteBranding();
   const navigate = useNavigate();
   const [sections, setSections] = useState<Section[]>([]);
 
