@@ -31,6 +31,7 @@ type OrderItem = {
 
 function BuyerPage() {
   const { profile, loading, signOut } = useAuth();
+  const branding = useSiteBranding();
   const navigate = useNavigate();
   const [buyer, setBuyer] = useState<Buyer | null>(null);
 
