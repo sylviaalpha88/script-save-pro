@@ -21,6 +21,7 @@ function AuthPage() {
   const resolve = useServerFn(resolveUsername);
   const navigate = useNavigate();
   const { refresh, profile } = useAuth();
+  const branding = useSiteBranding();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
