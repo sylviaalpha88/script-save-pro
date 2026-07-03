@@ -67,11 +67,11 @@ function DirectorPage() {
       <header className="bg-background border-b sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
-              <Pill className="h-5 w-5" />
+            <div className="h-9 w-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center overflow-hidden">
+              {branding.logoUrl ? <img src={branding.logoUrl} alt={branding.name} className="h-full w-full object-cover"/> : <Pill className="h-5 w-5" />}
             </div>
             <div className="leading-tight">
-              <div className="text-sm font-bold">LEMSA Director</div>
+              <div className="text-sm font-bold">{branding.name} Director</div>
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{profile.username}</div>
             </div>
           </div>
