@@ -1,5 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
+import { useSiteBranding } from "@/lib/site-branding";
 import { Button } from "@/components/ui/button";
 import { Pill, LogOut } from "lucide-react";
 import { type ReactNode, useEffect } from "react";
