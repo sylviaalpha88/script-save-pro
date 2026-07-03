@@ -108,7 +108,7 @@ function Index() {
 
         <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 text-center">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight drop-shadow-lg">
-            {sections.find(s => s.section === "home")?.title || "LEMSA Pharmacy"}
+            {sections.find(s => s.section === "home")?.title || branding.name}
           </h1>
           <p className="mt-4 text-lg sm:text-xl text-white/90 max-w-2xl drop-shadow-md">
             {sections.find(s => s.section === "home")?.body || "Comprehensive management system for inventory, sales, and pharmacy operations."}
