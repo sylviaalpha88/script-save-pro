@@ -1,5 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
+import { useSiteBranding } from "@/lib/site-branding";
 import { Button } from "@/components/ui/button";
 import { Pill, LogOut } from "lucide-react";
 import { type ReactNode, useEffect } from "react";
@@ -8,6 +9,7 @@ interface NavItem { to: string; label: string; }
 
 export function AppShell({ title, nav, children }: { title: string; nav: NavItem[]; children: ReactNode }) {
   const { profile, signOut, loading } = useAuth();
+  const branding = useSiteBranding();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -24,10 +26,14 @@ export function AppShell({ title, nav, children }: { title: string; nav: NavItem
       <header className="bg-card border-b sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-2 font-semibold">
-            <div className="h-9 w-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
-              <Pill className="h-5 w-5" />
+            <div className="h-9 w-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center overflow-hidden">
+              {branding.logoUrl ? (
+                <img src={branding.logoUrl} alt={branding.name} className="h-full w-full object-cover" />
+              ) : (
+                <Pill className="h-5 w-5" />
+              )}
             </div>
-            <div className="text-sm font-bold whitespace-nowrap">LEMSA Pharmacy Management System</div>
+            <div className="text-sm font-bold whitespace-nowrap">{branding.name} — {branding.tagline}</div>
           </Link>
           <nav className="hidden md:flex items-center gap-1">
             {nav.map((n) => {

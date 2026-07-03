@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { useSiteBranding } from "@/lib/site-branding";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ type OrderItem = {
 
 function BuyerPage() {
   const { profile, loading, signOut } = useAuth();
+  const branding = useSiteBranding();
   const navigate = useNavigate();
   const [buyer, setBuyer] = useState<Buyer | null>(null);
 
@@ -50,9 +52,11 @@ function BuyerPage() {
       <header className="border-b bg-card sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center"><Pill className="h-5 w-5"/></div>
+            <div className="h-9 w-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center overflow-hidden">
+              {branding.logoUrl ? <img src={branding.logoUrl} alt={branding.name} className="h-full w-full object-cover"/> : <Pill className="h-5 w-5"/>}
+            </div>
             <div>
-              <div className="font-bold leading-tight">LEMSA Buyer Portal</div>
+              <div className="font-bold leading-tight">{branding.name} Buyer Portal</div>
               <div className="text-xs text-muted-foreground">{buyer.name} · Status: <span className={buyer.status === "approved" ? "text-green-600" : "text-amber-600"}>{buyer.status}</span></div>
             </div>
           </div>

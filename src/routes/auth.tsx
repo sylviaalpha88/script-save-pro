@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { ensureDirector, resolveUsername } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { useSiteBranding } from "@/lib/site-branding";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +21,7 @@ function AuthPage() {
   const resolve = useServerFn(resolveUsername);
   const navigate = useNavigate();
   const { refresh, profile } = useAuth();
+  const branding = useSiteBranding();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -56,11 +58,15 @@ function AuthPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/20 p-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center space-y-3">
-          <div className="mx-auto h-14 w-14 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center">
-            <Pill className="h-7 w-7" />
+          <div className="mx-auto h-14 w-14 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center overflow-hidden">
+            {branding.logoUrl ? (
+              <img src={branding.logoUrl} alt={branding.name} className="h-full w-full object-cover" />
+            ) : (
+              <Pill className="h-7 w-7" />
+            )}
           </div>
-          <CardTitle className="text-2xl">LEMSA Pharmacy</CardTitle>
-          <p className="text-sm text-muted-foreground">Management System</p>
+          <CardTitle className="text-2xl">{branding.name}</CardTitle>
+          <p className="text-sm text-muted-foreground">{branding.tagline}</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">

@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { useSiteBranding } from "@/lib/site-branding";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Pill } from "lucide-react";
@@ -23,6 +24,7 @@ const LABELS: Record<string, string> = {
 
 function Index() {
   const { loading, profile } = useAuth();
+  const branding = useSiteBranding();
   const navigate = useNavigate();
   const [sections, setSections] = useState<Section[]>([]);
 
@@ -49,7 +51,7 @@ function Index() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight">LEMSA Pharmacy Management System</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{branding.name}</h1>
           <p className="mt-3 text-muted-foreground">Loading…</p>
         </div>
       </div>
@@ -70,12 +72,16 @@ function Index() {
 
         <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-4 flex-wrap gap-3">
           <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
-              <Pill className="h-5 w-5" />
+            <div className="h-9 w-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center overflow-hidden">
+              {branding.logoUrl ? (
+                <img src={branding.logoUrl} alt={branding.name} className="h-full w-full object-cover" />
+              ) : (
+                <Pill className="h-5 w-5" />
+              )}
             </div>
             <div className="leading-tight">
-              <div className="text-sm font-bold text-white">LEMSA</div>
-              <div className="text-[10px] uppercase tracking-wider text-white/70">Pharmacy MS</div>
+              <div className="text-sm font-bold text-white">{branding.name}</div>
+              <div className="text-[10px] uppercase tracking-wider text-white/70">{branding.tagline}</div>
             </div>
           </div>
 
@@ -102,7 +108,7 @@ function Index() {
 
         <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 text-center">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight drop-shadow-lg">
-            {sections.find(s => s.section === "home")?.title || "LEMSA Pharmacy"}
+            {sections.find(s => s.section === "home")?.title || branding.name}
           </h1>
           <p className="mt-4 text-lg sm:text-xl text-white/90 max-w-2xl drop-shadow-md">
             {sections.find(s => s.section === "home")?.body || "Comprehensive management system for inventory, sales, and pharmacy operations."}
@@ -133,7 +139,7 @@ function Index() {
       </div>
 
       <footer className="border-t py-6 text-center text-sm text-muted-foreground">
-        © {new Date().getFullYear()} LEMSA Pharmacy
+        © {new Date().getFullYear()} {branding.name}
       </footer>
     </div>
   );
