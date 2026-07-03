@@ -25,6 +25,7 @@ export const Route = createFileRoute("/director")({
 
 function DirectorPage() {
   const { profile, loading, signOut } = useAuth();
+  const branding = useSiteBranding();
   const navigate = useNavigate();
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading…</div>;
