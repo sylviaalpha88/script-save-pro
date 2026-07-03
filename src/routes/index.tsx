@@ -72,12 +72,16 @@ function Index() {
 
         <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-4 flex-wrap gap-3">
           <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
-              <Pill className="h-5 w-5" />
+            <div className="h-9 w-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center overflow-hidden">
+              {branding.logoUrl ? (
+                <img src={branding.logoUrl} alt={branding.name} className="h-full w-full object-cover" />
+              ) : (
+                <Pill className="h-5 w-5" />
+              )}
             </div>
             <div className="leading-tight">
-              <div className="text-sm font-bold text-white">LEMSA</div>
-              <div className="text-[10px] uppercase tracking-wider text-white/70">Pharmacy MS</div>
+              <div className="text-sm font-bold text-white">{branding.name}</div>
+              <div className="text-[10px] uppercase tracking-wider text-white/70">{branding.tagline}</div>
             </div>
           </div>
 
