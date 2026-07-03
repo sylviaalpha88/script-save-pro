@@ -9,6 +9,7 @@ interface NavItem { to: string; label: string; }
 
 export function AppShell({ title, nav, children }: { title: string; nav: NavItem[]; children: ReactNode }) {
   const { profile, signOut, loading } = useAuth();
+  const branding = useSiteBranding();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
