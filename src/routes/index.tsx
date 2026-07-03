@@ -51,7 +51,7 @@ function Index() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight">LEMSA Pharmacy Management System</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{branding.name}</h1>
           <p className="mt-3 text-muted-foreground">Loading…</p>
         </div>
       </div>
