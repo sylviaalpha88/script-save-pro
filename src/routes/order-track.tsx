@@ -147,6 +147,18 @@ function OrderTrackPage() {
               <Button onClick={sendGps} disabled={busy || !orderId} className="flex-1"><Navigation className="h-4 w-4 mr-1"/>Send GPS</Button>
               <Button onClick={sendName} disabled={busy || !orderId} variant="secondary" className="flex-1"><MapPin className="h-4 w-4 mr-1"/>Save location name</Button>
             </div>
+            <div className={`flex items-center justify-between gap-2 rounded-md border p-3 ${live ? "border-green-500 bg-green-50 dark:bg-green-950/30" : ""}`}>
+              <div className="flex items-center gap-2">
+                <Radio className={`h-4 w-4 ${live ? "text-green-600 animate-pulse" : "text-muted-foreground"}`} />
+                <div>
+                  <div className="text-sm font-medium">Live GPS tracking</div>
+                  <div className="text-xs text-muted-foreground">
+                    {live ? `Auto-sending every 30s${lastPing ? ` · last ${lastPing}` : ""}` : "Turn on while driving to auto-share location"}
+                  </div>
+                </div>
+              </div>
+              <Switch checked={live} onCheckedChange={setLive} disabled={!orderId} />
+            </div>
             <p className="text-xs text-muted-foreground">GPS uses your device's geolocation. Each entry is timestamped and visible to the buyer in real time.</p>
           </CardContent>
         </Card>
