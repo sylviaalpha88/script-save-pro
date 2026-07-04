@@ -563,3 +563,98 @@ function PharmacyInfoPanel() {
     </Card>
   );
 }
+
+type AdminTrackEv = {
+  id: string; order_id: string; location_name: string | null;
+  latitude: number | null; longitude: number | null;
+  note: string | null; created_at: string;
+  buyer_orders: { id: string; status: string; wholesale_buyers: { name: string } | null } | null;
+};
+
+function AdminOrderTrackPanel() {
+  const [events, setEvents] = useState<AdminTrackEv[]>([]);
+  const [filter, setFilter] = useState("");
+
+  const load = async () => {
+    const { data } = await supabase.from("order_tracking_events")
+      .select("id, order_id, location_name, latitude, longitude, note, created_at, buyer_orders(id, status, wholesale_buyers(name))")
+      .order("created_at", { ascending: false }).limit(200);
+    setEvents((data as any) ?? []);
+  };
+
+  useEffect(() => {
+    load();
+    const ch = supabase.channel("admin-tracking")
+      .on("postgres_changes", { event: "*", schema: "public", table: "order_tracking_events" }, load)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
+
+  const filtered = events.filter(e => {
+    if (!filter.trim()) return true;
+    const f = filter.toLowerCase();
+    return (e.buyer_orders?.wholesale_buyers?.name ?? "").toLowerCase().includes(f)
+      || e.order_id.toLowerCase().includes(f)
+      || (e.location_name ?? "").toLowerCase().includes(f);
+  });
+
+  // Group by order, show latest event per order at top
+  const latestByOrder = new Map<string, AdminTrackEv>();
+  for (const e of filtered) {
+    if (!latestByOrder.has(e.order_id)) latestByOrder.set(e.order_id, e);
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader><CardTitle>Active deliveries — latest known location</CardTitle></CardHeader>
+        <CardContent>
+          <Input placeholder="Search by buyer, order id, or place…" value={filter} onChange={e => setFilter(e.target.value)} className="mb-3 max-w-sm"/>
+          <Table>
+            <TableHeader><TableRow><TableHead>Order</TableHead><TableHead>Buyer</TableHead><TableHead>Last update</TableHead><TableHead>Location</TableHead><TableHead>GPS</TableHead></TableRow></TableHeader>
+            <TableBody>
+              {latestByOrder.size === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">No tracking data yet</TableCell></TableRow>}
+              {Array.from(latestByOrder.values()).map(e => (
+                <TableRow key={e.order_id}>
+                  <TableCell className="text-xs">#{e.order_id.slice(0,8)}</TableCell>
+                  <TableCell>{e.buyer_orders?.wholesale_buyers?.name ?? "—"}</TableCell>
+                  <TableCell className="text-xs">{new Date(e.created_at).toLocaleString()}</TableCell>
+                  <TableCell>{e.location_name ?? (e.note === "Live GPS" ? "Live GPS" : "—")}</TableCell>
+                  <TableCell className="text-xs">{e.latitude != null && e.longitude != null ? (
+                    <a className="text-primary underline" href={`https://maps.google.com/?q=${e.latitude},${e.longitude}`} target="_blank" rel="noreferrer">
+                      {e.latitude.toFixed(4)}, {e.longitude.toFixed(4)}
+                    </a>
+                  ) : "—"}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader><CardTitle>All tracking events (latest 200)</CardTitle></CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader><TableRow><TableHead>Time</TableHead><TableHead>Order</TableHead><TableHead>Buyer</TableHead><TableHead>Location</TableHead><TableHead>GPS</TableHead><TableHead>Note</TableHead></TableRow></TableHeader>
+            <TableBody>
+              {filtered.map(e => (
+                <TableRow key={e.id}>
+                  <TableCell className="text-xs">{new Date(e.created_at).toLocaleString()}</TableCell>
+                  <TableCell className="text-xs">#{e.order_id.slice(0,8)}</TableCell>
+                  <TableCell>{e.buyer_orders?.wholesale_buyers?.name ?? "—"}</TableCell>
+                  <TableCell>{e.location_name ?? "—"}</TableCell>
+                  <TableCell className="text-xs">{e.latitude != null && e.longitude != null ? (
+                    <a className="text-primary underline" href={`https://maps.google.com/?q=${e.latitude},${e.longitude}`} target="_blank" rel="noreferrer">
+                      {e.latitude.toFixed(4)}, {e.longitude.toFixed(4)}
+                    </a>
+                  ) : "—"}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{e.note ?? "—"}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
