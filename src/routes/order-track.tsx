@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { MapPin, Navigation } from "lucide-react";
+import { MapPin, Navigation, Radio } from "lucide-react";
 
 export const Route = createFileRoute("/order-track")({
   component: OrderTrackPage,
@@ -29,6 +30,8 @@ function OrderTrackPage() {
   const [locName, setLocName] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [live, setLive] = useState(false);
+  const [lastPing, setLastPing] = useState<string | null>(null);
 
   useEffect(() => {
     if (loading) return;
@@ -52,6 +55,43 @@ function OrderTrackPage() {
   };
 
   useEffect(() => { if (orderId) loadEvents(orderId); else setEvents([]); }, [orderId]);
+
+  // Realtime: refresh history when new events land
+  useEffect(() => {
+    if (!orderId) return;
+    const ch = supabase.channel(`ot-${orderId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "order_tracking_events", filter: `order_id=eq.${orderId}` },
+        () => loadEvents(orderId))
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [orderId]);
+
+  // Live GPS: auto-send position every 30s while enabled
+  useEffect(() => {
+    if (!live || !orderId || !profile?.pharmacy_id) return;
+    const pharmacyId = profile.pharmacy_id;
+    const userId = profile.id;
+    if (!("geolocation" in navigator)) { toast.error("GPS not available"); setLive(false); return; }
+    let cancelled = false;
+    const ping = () => {
+      navigator.geolocation.getCurrentPosition(
+        async (p) => {
+          if (cancelled) return;
+          const { error } = await supabase.from("order_tracking_events").insert({
+            order_id: orderId, pharmacy_id: pharmacyId, recorded_by: userId,
+            latitude: p.coords.latitude, longitude: p.coords.longitude,
+            location_name: null, note: "Live GPS",
+          });
+          if (!error) setLastPing(new Date().toLocaleTimeString());
+        },
+        (err) => { if (!cancelled) toast.error(err.message); },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      );
+    };
+    ping();
+    const iv = setInterval(ping, 30000);
+    return () => { cancelled = true; clearInterval(iv); };
+  }, [live, orderId, profile?.pharmacy_id, profile?.id]);
 
   const recordEvent = async (payload: { location_name?: string | null; latitude?: number | null; longitude?: number | null; note?: string | null }) => {
     if (!orderId) { toast.error("Select an order"); return; }
@@ -106,6 +146,18 @@ function OrderTrackPage() {
             <div className="flex gap-2">
               <Button onClick={sendGps} disabled={busy || !orderId} className="flex-1"><Navigation className="h-4 w-4 mr-1"/>Send GPS</Button>
               <Button onClick={sendName} disabled={busy || !orderId} variant="secondary" className="flex-1"><MapPin className="h-4 w-4 mr-1"/>Save location name</Button>
+            </div>
+            <div className={`flex items-center justify-between gap-2 rounded-md border p-3 ${live ? "border-green-500 bg-green-50 dark:bg-green-950/30" : ""}`}>
+              <div className="flex items-center gap-2">
+                <Radio className={`h-4 w-4 ${live ? "text-green-600 animate-pulse" : "text-muted-foreground"}`} />
+                <div>
+                  <div className="text-sm font-medium">Live GPS tracking</div>
+                  <div className="text-xs text-muted-foreground">
+                    {live ? `Auto-sending every 30s${lastPing ? ` · last ${lastPing}` : ""}` : "Turn on while driving to auto-share location"}
+                  </div>
+                </div>
+              </div>
+              <Switch checked={live} onCheckedChange={setLive} disabled={!orderId} />
             </div>
             <p className="text-xs text-muted-foreground">GPS uses your device's geolocation. Each entry is timestamped and visible to the buyer in real time.</p>
           </CardContent>
