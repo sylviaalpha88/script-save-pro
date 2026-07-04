@@ -69,6 +69,8 @@ function OrderTrackPage() {
   // Live GPS: auto-send position every 30s while enabled
   useEffect(() => {
     if (!live || !orderId || !profile?.pharmacy_id) return;
+    const pharmacyId = profile.pharmacy_id;
+    const userId = profile.id;
     if (!("geolocation" in navigator)) { toast.error("GPS not available"); setLive(false); return; }
     let cancelled = false;
     const ping = () => {
