@@ -56,6 +56,41 @@ function OrderTrackPage() {
 
   useEffect(() => { if (orderId) loadEvents(orderId); else setEvents([]); }, [orderId]);
 
+  // Realtime: refresh history when new events land
+  useEffect(() => {
+    if (!orderId) return;
+    const ch = supabase.channel(`ot-${orderId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "order_tracking_events", filter: `order_id=eq.${orderId}` },
+        () => loadEvents(orderId))
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [orderId]);
+
+  // Live GPS: auto-send position every 30s while enabled
+  useEffect(() => {
+    if (!live || !orderId || !profile?.pharmacy_id) return;
+    if (!("geolocation" in navigator)) { toast.error("GPS not available"); setLive(false); return; }
+    let cancelled = false;
+    const ping = () => {
+      navigator.geolocation.getCurrentPosition(
+        async (p) => {
+          if (cancelled) return;
+          const { error } = await supabase.from("order_tracking_events").insert({
+            order_id: orderId, pharmacy_id: profile.pharmacy_id, recorded_by: profile.id,
+            latitude: p.coords.latitude, longitude: p.coords.longitude,
+            location_name: null, note: "Live GPS",
+          });
+          if (!error) setLastPing(new Date().toLocaleTimeString());
+        },
+        (err) => { if (!cancelled) toast.error(err.message); },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      );
+    };
+    ping();
+    const iv = setInterval(ping, 30000);
+    return () => { cancelled = true; clearInterval(iv); };
+  }, [live, orderId, profile?.pharmacy_id, profile?.id]);
+
   const recordEvent = async (payload: { location_name?: string | null; latitude?: number | null; longitude?: number | null; note?: string | null }) => {
     if (!orderId) { toast.error("Select an order"); return; }
     if (!profile?.pharmacy_id) { toast.error("No pharmacy linked"); return; }
