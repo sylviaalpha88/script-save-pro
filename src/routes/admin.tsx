@@ -56,12 +56,14 @@ function AdminPage() {
             <TabsTrigger value="reconcile">Reconciliation</TabsTrigger>
             <TabsTrigger value="users">Manage Users</TabsTrigger>
             <TabsTrigger value="info">Pharmacy Info</TabsTrigger>
+            <TabsTrigger value="track">Order Track</TabsTrigger>
           </TabsList>
           <TabsContent value="sales"><SalesPanel /></TabsContent>
           <TabsContent value="history"><PerItemHistory /></TabsContent>
           <TabsContent value="reconcile"><ReconciliationPanel /></TabsContent>
           <TabsContent value="users"><UsersPanel /></TabsContent>
           <TabsContent value="info"><PharmacyInfoPanel /></TabsContent>
+          <TabsContent value="track"><AdminOrderTrackPanel /></TabsContent>
         </Tabs>
       )}
     </AppShell>
