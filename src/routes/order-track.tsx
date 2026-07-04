@@ -78,7 +78,7 @@ function OrderTrackPage() {
         async (p) => {
           if (cancelled) return;
           const { error } = await supabase.from("order_tracking_events").insert({
-            order_id: orderId, pharmacy_id: profile.pharmacy_id, recorded_by: profile.id,
+            order_id: orderId, pharmacy_id: pharmacyId, recorded_by: userId,
             latitude: p.coords.latitude, longitude: p.coords.longitude,
             location_name: null, note: "Live GPS",
           });
