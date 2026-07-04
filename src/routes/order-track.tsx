@@ -30,6 +30,8 @@ function OrderTrackPage() {
   const [locName, setLocName] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [live, setLive] = useState(false);
+  const [lastPing, setLastPing] = useState<string | null>(null);
 
   useEffect(() => {
     if (loading) return;
