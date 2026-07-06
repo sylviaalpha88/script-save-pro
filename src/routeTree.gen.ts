@@ -13,6 +13,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as PharmacyRouteImport } from './routes/pharmacy'
 import { Route as OrderTrackRouteImport } from './routes/order-track'
 import { Route as InventoryRouteImport } from './routes/inventory'
+import { Route as HomeRouteImport } from './routes/home'
 import { Route as DirectorRouteImport } from './routes/director'
 import { Route as BuyerRouteImport } from './routes/buyer'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -40,6 +41,11 @@ const OrderTrackRoute = OrderTrackRouteImport.update({
 const InventoryRoute = InventoryRouteImport.update({
   id: '/inventory',
   path: '/inventory',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DirectorRoute = DirectorRouteImport.update({
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/buyer': typeof BuyerRoute
   '/director': typeof DirectorRoute
+  '/home': typeof HomeRoute
   '/inventory': typeof InventoryRoute
   '/order-track': typeof OrderTrackRoute
   '/pharmacy': typeof PharmacyRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/buyer': typeof BuyerRoute
   '/director': typeof DirectorRoute
+  '/home': typeof HomeRoute
   '/inventory': typeof InventoryRoute
   '/order-track': typeof OrderTrackRoute
   '/pharmacy': typeof PharmacyRoute
@@ -119,6 +127,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/buyer': typeof BuyerRoute
   '/director': typeof DirectorRoute
+  '/home': typeof HomeRoute
   '/inventory': typeof InventoryRoute
   '/order-track': typeof OrderTrackRoute
   '/pharmacy': typeof PharmacyRoute
@@ -135,6 +144,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/buyer'
     | '/director'
+    | '/home'
     | '/inventory'
     | '/order-track'
     | '/pharmacy'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/buyer'
     | '/director'
+    | '/home'
     | '/inventory'
     | '/order-track'
     | '/pharmacy'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/buyer'
     | '/director'
+    | '/home'
     | '/inventory'
     | '/order-track'
     | '/pharmacy'
@@ -178,6 +190,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   BuyerRoute: typeof BuyerRoute
   DirectorRoute: typeof DirectorRoute
+  HomeRoute: typeof HomeRoute
   InventoryRoute: typeof InventoryRoute
   OrderTrackRoute: typeof OrderTrackRoute
   PharmacyRoute: typeof PharmacyRoute
@@ -214,6 +227,13 @@ declare module '@tanstack/react-router' {
       path: '/inventory'
       fullPath: '/inventory'
       preLoaderRoute: typeof InventoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/director': {
@@ -282,6 +302,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   BuyerRoute: BuyerRoute,
   DirectorRoute: DirectorRoute,
+  HomeRoute: HomeRoute,
   InventoryRoute: InventoryRoute,
   OrderTrackRoute: OrderTrackRoute,
   PharmacyRoute: PharmacyRoute,
