@@ -373,7 +373,7 @@ function SmsSettingsPanel() {
     e.preventDefault();
     setBusy(true);
     try {
-      await save({ data: { username: username.trim(), apiKey: apiKey.trim(), senderId: senderId.trim() || null } });
+      await save({ data: { username: username.trim(), apiKey: apiKey.trim(), senderId: senderId.trim() || undefined } });
       toast.success("SMS settings saved. These are only visible when signed in as director.");
       setHasSaved(true);
       setReveal(false);
