@@ -29,13 +29,8 @@ function AuthPage() {
   useEffect(() => { ensure({}).catch(() => {}); }, [ensure]);
   useEffect(() => {
     if (!profile) return;
-    if (profile.is_director) navigate({ to: "/director" });
-    else if (profile.role === "admin") navigate({ to: "/admin" });
-    else if (profile.role === "inventory") navigate({ to: "/inventory" });
-    else if (profile.role === "accountant") navigate({ to: "/accountant" });
-    else if ((profile.role as string) === "order_track") navigate({ to: "/order-track" });
-    else if (profile.role === "buyer") navigate({ to: "/buyer" });
-    else navigate({ to: "/pharmacy" });
+    if (profile.role === "buyer") navigate({ to: "/buyer" });
+    else navigate({ to: "/home" });
   }, [profile, navigate]);
 
   const onSubmit = async (e: React.FormEvent) => {

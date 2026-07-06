@@ -5,9 +5,11 @@ import {
   createPharmacy, deletePharmacy,
   createPharmacyAdmin, deletePharmacyAdmin, updateAdminPermissions,
 } from "@/lib/admin.functions";
+import { getSmsSettings, saveSmsSettings } from "@/lib/messaging.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { useSiteBranding } from "@/lib/site-branding";
+import { MessagesPanel } from "@/components/MessagesPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Pill, LogOut, Trash2, Plus, Building2 } from "lucide-react";
+import { Pill, LogOut, Trash2, Plus, Building2, MessageSquare, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/director")({
@@ -83,14 +85,18 @@ function DirectorPage() {
 
       <main className="max-w-6xl mx-auto p-4 space-y-6">
         <Tabs defaultValue={isDirector ? "pharmacies" : "site"} className="space-y-6">
-          <TabsList>
+          <TabsList className="flex-wrap">
             {isDirector && <TabsTrigger value="pharmacies">Pharmacies</TabsTrigger>}
             {isDirector && <TabsTrigger value="admins">Pharmacy Admins</TabsTrigger>}
             <TabsTrigger value="site">Public Site</TabsTrigger>
+            {isDirector && <TabsTrigger value="sms">SMS Settings</TabsTrigger>}
+            {isDirector && <TabsTrigger value="messages">Messages</TabsTrigger>}
           </TabsList>
           {isDirector && <TabsContent value="pharmacies"><PharmaciesPanel /></TabsContent>}
           {isDirector && <TabsContent value="admins"><AdminsPanel /></TabsContent>}
           <TabsContent value="site"><SitePanel /></TabsContent>
+          {isDirector && <TabsContent value="sms"><SmsSettingsPanel /></TabsContent>}
+          {isDirector && <TabsContent value="messages"><MessagesPanel /></TabsContent>}
         </Tabs>
       </main>
     </div>
@@ -335,3 +341,93 @@ function SitePanel() {
     </div>
   );
 }
+
+// ===== SMS (Africa's Talking) settings =====
+function SmsSettingsPanel() {
+  const get = useServerFn(getSmsSettings);
+  const save = useServerFn(saveSmsSettings);
+  const [loading, setLoading] = useState(true);
+  const [hasSaved, setHasSaved] = useState(false);
+  const [username, setUsername] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [senderId, setSenderId] = useState("");
+  const [reveal, setReveal] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const r = await get({});
+      if (r) {
+        setHasSaved(true);
+        setUsername(r.at_username ?? "");
+        setApiKey(r.at_api_key ?? "");
+        setSenderId(r.sender_id ?? "");
+      }
+    } catch { /* ignore */ }
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await save({ data: { username: username.trim(), apiKey: apiKey.trim(), senderId: senderId.trim() || undefined } });
+      toast.success("SMS settings saved. These are only visible when signed in as director.");
+      setHasSaved(true);
+      setReveal(false);
+    } catch (e) { toast.error((e as Error).message); }
+    finally { setBusy(false); }
+  };
+
+  if (loading) return <p className="text-muted-foreground">Loading…</p>;
+
+  const masked = apiKey ? apiKey.slice(0, 4) + "•".repeat(Math.max(0, apiKey.length - 8)) + apiKey.slice(-4) : "";
+
+  return (
+    <Card className="max-w-2xl">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5"/>Africa's Talking – SMS credentials</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground mb-4 flex items-start gap-2">
+          <KeyRound className="h-4 w-4 mt-0.5 shrink-0"/>
+          <div>
+            These credentials let the Admin, Pharmacy and Accountant portals send SMS to registered buyers via Africa's Talking.
+            They are stored securely and only visible on this page while you are signed in as director.
+          </div>
+        </div>
+        <form onSubmit={submit} className="space-y-3">
+          <div>
+            <Label>Africa's Talking username</Label>
+            <Input value={username} onChange={e => setUsername(e.target.value)} placeholder="sandbox or your live username" required />
+          </div>
+          <div>
+            <Label className="flex items-center justify-between">
+              <span>API key</span>
+              {hasSaved && apiKey && (
+                <button type="button" className="text-xs underline text-muted-foreground" onClick={() => setReveal(v => !v)}>
+                  {reveal ? "Hide" : "Reveal"}
+                </button>
+              )}
+            </Label>
+            <Input
+              type={reveal ? "text" : "password"}
+              value={reveal || !hasSaved ? apiKey : masked}
+              onChange={e => { setReveal(true); setApiKey(e.target.value); }}
+              placeholder="atsk_..."
+              required
+            />
+          </div>
+          <div>
+            <Label>Sender ID (optional)</Label>
+            <Input value={senderId} onChange={e => setSenderId(e.target.value)} placeholder="e.g. AT_SMS or your registered sender ID" maxLength={30}/>
+          </div>
+          <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save credentials"}</Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+

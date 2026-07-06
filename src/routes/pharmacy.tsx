@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/lib/auth-context";
 import { AppShell } from "@/components/AppShell";
+import { MessagesPanel } from "@/components/MessagesPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { registerBuyer } from "@/lib/buyer.functions";
 import { deleteBuyerAccount } from "@/lib/admin.functions";
@@ -31,7 +32,7 @@ function PharmacyPage() {
     <AppShell title="Pharmacy – Sales" nav={nav}>
 
       {!loading && profile && profile.role !== "pharmacy" && profile.role !== "admin" ? (
-        <p className="text-destructive">Access denied.</p>
+        <p className="text-destructive font-semibold">You don't have permission to access this page.</p>
       ) : (
         <Tabs defaultValue="retail" className="space-y-6">
           <TabsList>
@@ -40,12 +41,14 @@ function PharmacyPage() {
             <TabsTrigger value="dispensed">Dispensed</TabsTrigger>
             <TabsTrigger value="buyers">Buyer Accounts</TabsTrigger>
             <TabsTrigger value="buyer_orders">Buyer Orders</TabsTrigger>
+            <TabsTrigger value="messages">Messages</TabsTrigger>
           </TabsList>
           <TabsContent value="retail"><RetailForm /></TabsContent>
           <TabsContent value="wholesale"><WholesaleForm /></TabsContent>
           <TabsContent value="dispensed"><DispensedPanel /></TabsContent>
           <TabsContent value="buyers"><BuyersPanel /></TabsContent>
           <TabsContent value="buyer_orders"><BuyerOrdersPanel /></TabsContent>
+          <TabsContent value="messages"><MessagesPanel /></TabsContent>
         </Tabs>
 
       )}
