@@ -241,6 +241,53 @@ export type Database = {
           },
         ]
       }
+      messages: {
+        Row: {
+          body: string
+          buyer_id: string | null
+          created_at: string
+          id: string
+          pharmacy_id: string | null
+          provider_response: Json | null
+          recipient_name: string | null
+          recipient_phone: string
+          sender_id: string | null
+          status: string
+        }
+        Insert: {
+          body: string
+          buyer_id?: string | null
+          created_at?: string
+          id?: string
+          pharmacy_id?: string | null
+          provider_response?: Json | null
+          recipient_name?: string | null
+          recipient_phone: string
+          sender_id?: string | null
+          status?: string
+        }
+        Update: {
+          body?: string
+          buyer_id?: string | null
+          created_at?: string
+          id?: string
+          pharmacy_id?: string | null
+          provider_response?: Json | null
+          recipient_name?: string | null
+          recipient_phone?: string
+          sender_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_tracking_events: {
         Row: {
           created_at: string
@@ -532,6 +579,39 @@ export type Database = {
           image_url?: string | null
           section?: string
           title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      sms_settings: {
+        Row: {
+          at_api_key: string | null
+          at_username: string | null
+          created_at: string
+          id: string
+          provider: string
+          sender_id: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          at_api_key?: string | null
+          at_username?: string | null
+          created_at?: string
+          id?: string
+          provider?: string
+          sender_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          at_api_key?: string | null
+          at_username?: string | null
+          created_at?: string
+          id?: string
+          provider?: string
+          sender_id?: string | null
           updated_at?: string
           updated_by?: string | null
         }
