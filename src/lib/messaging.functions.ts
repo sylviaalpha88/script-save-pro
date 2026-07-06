@@ -87,13 +87,12 @@ export const sendBulkSms = createServerFn({ method: "POST" })
     const pharmacyId = me.is_director ? (targets[0]?.pharmacy_id ?? null) : me.pharmacy_id;
 
     if (!cfg?.at_username || !cfg?.at_api_key) {
-      // Log as failed but with a clear reason (so director sees it needs configuring).
       const rows = targets.map(b => ({
         pharmacy_id: b.pharmacy_id,
         sender_id: context.userId,
         buyer_id: b.id,
         recipient_name: b.name,
-        recipient_phone: b.phone,
+        recipient_phone: b.phone as string,
         body: data.body,
         status: "failed",
         provider_response: { error: "SMS settings not configured. Ask the Director to add Africa's Talking username and API key." },
