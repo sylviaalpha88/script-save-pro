@@ -93,47 +93,55 @@ function AccountantPage() {
   return (
     <AppShell title="Accountant – Daily Sales Report" nav={nav}>
       {!loading && profile && profile.role !== "accountant" && profile.role !== "admin" ? (
-        <p className="text-destructive">Access denied.</p>
+        <p className="text-destructive font-semibold">You don't have permission to access this page.</p>
       ) : (
-        <div className="grid lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader><CardTitle>Submit Daily Report</CardTitle></CardHeader>
-            <CardContent>
-              <form onSubmit={submit} className="space-y-3">
-                <div><Label>Date</Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} required /></div>
-                <div><Label>Cash Collected (KSh)</Label><Input type="number" step="0.01" min="0" value={cash} onChange={e => setCash(e.target.value)} required /></div>
-                <div><Label>M-Pesa Collected (KSh)</Label><Input type="number" step="0.01" min="0" value={mpesa} onChange={e => setMpesa(e.target.value)} required /></div>
-                <div>
-                  <Label>Total Collected (auto)</Label>
-                  <Input value={`KSh ${total.toFixed(2)}`} readOnly className="bg-muted font-semibold" />
-                </div>
-                <div><Label>Notes (optional)</Label><Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} /></div>
-                <Button type="submit" className="w-full" disabled={busy}>{busy ? "Submitting…" : "Submit Report"}</Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader><CardTitle>My Submitted Reports</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex flex-wrap items-end gap-2">
-                <div><Label className="text-xs">From</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
-                <div><Label className="text-xs">To</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
-                <Button onClick={load} size="sm">Apply</Button>
-                <Button variant="outline" size="sm" onClick={() => { const t = todayISO(); setFrom(t); setTo(t); setTimeout(load, 0); }}>Today</Button>
-              </div>
-              <div className="border rounded-md overflow-x-auto">
-                <Table>
-                  <TableHeader><TableRow><TableHead>Date</TableHead><TableHead className="text-right">Cash</TableHead><TableHead className="text-right">M-Pesa</TableHead><TableHead className="text-right">Total</TableHead><TableHead></TableHead></TableRow></TableHeader>
-                  <TableBody>
-                    {reports.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">No reports in range</TableCell></TableRow>}
-                    {reports.map(r => <ReportRow key={r.id} r={r} onChanged={load} />)}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <Tabs defaultValue="reports" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="reports">Daily Reports</TabsTrigger>
+            <TabsTrigger value="messages">Messages</TabsTrigger>
+          </TabsList>
+          <TabsContent value="reports">
+            <div className="grid lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader><CardTitle>Submit Daily Report</CardTitle></CardHeader>
+                <CardContent>
+                  <form onSubmit={submit} className="space-y-3">
+                    <div><Label>Date</Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} required /></div>
+                    <div><Label>Cash Collected (KSh)</Label><Input type="number" step="0.01" min="0" value={cash} onChange={e => setCash(e.target.value)} required /></div>
+                    <div><Label>M-Pesa Collected (KSh)</Label><Input type="number" step="0.01" min="0" value={mpesa} onChange={e => setMpesa(e.target.value)} required /></div>
+                    <div>
+                      <Label>Total Collected (auto)</Label>
+                      <Input value={`KSh ${total.toFixed(2)}`} readOnly className="bg-muted font-semibold" />
+                    </div>
+                    <div><Label>Notes (optional)</Label><Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} /></div>
+                    <Button type="submit" className="w-full" disabled={busy}>{busy ? "Submitting…" : "Submit Report"}</Button>
+                  </form>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader><CardTitle>My Submitted Reports</CardTitle></CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex flex-wrap items-end gap-2">
+                    <div><Label className="text-xs">From</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
+                    <div><Label className="text-xs">To</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
+                    <Button onClick={load} size="sm">Apply</Button>
+                    <Button variant="outline" size="sm" onClick={() => { const t = todayISO(); setFrom(t); setTo(t); setTimeout(load, 0); }}>Today</Button>
+                  </div>
+                  <div className="border rounded-md overflow-x-auto">
+                    <Table>
+                      <TableHeader><TableRow><TableHead>Date</TableHead><TableHead className="text-right">Cash</TableHead><TableHead className="text-right">M-Pesa</TableHead><TableHead className="text-right">Total</TableHead><TableHead></TableHead></TableRow></TableHeader>
+                      <TableBody>
+                        {reports.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">No reports in range</TableCell></TableRow>}
+                        {reports.map(r => <ReportRow key={r.id} r={r} onChanged={load} />)}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+          <TabsContent value="messages"><MessagesPanel /></TabsContent>
+        </Tabs>
       )}
     </AppShell>
   );
