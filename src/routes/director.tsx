@@ -87,14 +87,10 @@ function DirectorPage() {
             {isDirector && <TabsTrigger value="pharmacies">Pharmacies</TabsTrigger>}
             {isDirector && <TabsTrigger value="admins">Pharmacy Admins</TabsTrigger>}
             <TabsTrigger value="site">Public Site</TabsTrigger>
-            {isDirector && <TabsTrigger value="sms">SMS Settings</TabsTrigger>}
-            {isDirector && <TabsTrigger value="messages">Messages</TabsTrigger>}
           </TabsList>
           {isDirector && <TabsContent value="pharmacies"><PharmaciesPanel /></TabsContent>}
           {isDirector && <TabsContent value="admins"><AdminsPanel /></TabsContent>}
           <TabsContent value="site"><SitePanel /></TabsContent>
-          {isDirector && <TabsContent value="sms"><SmsSettingsPanel /></TabsContent>}
-          {isDirector && <TabsContent value="messages"><MessagesPanel /></TabsContent>}
         </Tabs>
       </main>
     </div>
