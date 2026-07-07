@@ -2,53 +2,92 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
-/** Director-only: read stored Africa's Talking settings. */
-export const getSmsSettings = createServerFn({ method: "GET" })
+/**
+ * Get SMS settings for a specific pharmacy.
+ * - Director: can read any pharmacy's row.
+ * - Pharmacy admin: can only read their own pharmacy's row.
+ * If no pharmacyId is passed, falls back to the caller's own pharmacy.
+ */
+export const getSmsSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d: { pharmacyId?: string | null } | undefined) =>
+    z.object({ pharmacyId: z.string().uuid().nullable().optional() }).parse(d ?? {}))
+  .handler(async ({ data, context }) => {
     const { data: me } = await context.supabase
-      .from("profiles").select("is_director").eq("id", context.userId).maybeSingle();
-    if (!me?.is_director) throw new Error("Director access required");
+      .from("profiles").select("role, pharmacy_id, is_director").eq("id", context.userId).maybeSingle();
+    if (!me) throw new Error("Not signed in");
+
+    const targetPharmacyId = data.pharmacyId ?? me.pharmacy_id ?? null;
+    if (!targetPharmacyId) return null;
+
+    if (!me.is_director) {
+      if (me.role !== "admin") throw new Error("Not permitted");
+      if (targetPharmacyId !== me.pharmacy_id) throw new Error("Forbidden");
+    }
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin
+    const { data: row } = await supabaseAdmin
       .from("sms_settings")
-      .select("id, provider, at_username, at_api_key, sender_id, updated_at")
-      .order("updated_at", { ascending: false })
-      .limit(1)
+      .select("id, provider, at_username, at_api_key, sender_id, pharmacy_id, updated_at")
+      .eq("pharmacy_id", targetPharmacyId)
       .maybeSingle();
-    return data ?? null;
+    return row ?? null;
   });
 
-/** Director-only: save Africa's Talking username + API key + optional sender ID. */
+/**
+ * Save Africa's Talking credentials for a specific pharmacy.
+ * - Director: can save for any pharmacy.
+ * - Pharmacy admin: only their own pharmacy.
+ */
 export const saveSmsSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { username: string; apiKey: string; senderId?: string }) =>
+  .inputValidator((d: { pharmacyId?: string | null; username: string; apiKey: string; senderId?: string | null }) =>
     z.object({
+      pharmacyId: z.string().uuid().nullable().optional(),
       username: z.string().min(1).max(120),
       apiKey: z.string().min(10).max(500),
       senderId: z.string().max(30).optional().nullable(),
     }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: me } = await context.supabase
-      .from("profiles").select("is_director").eq("id", context.userId).maybeSingle();
-    if (!me?.is_director) throw new Error("Director access required");
+      .from("profiles").select("role, pharmacy_id, is_director").eq("id", context.userId).maybeSingle();
+    if (!me) throw new Error("Not signed in");
+
+    const targetPharmacyId = data.pharmacyId ?? me.pharmacy_id ?? null;
+    if (!targetPharmacyId) throw new Error("Pharmacy is required");
+
+    if (!me.is_director) {
+      if (me.role !== "admin") throw new Error("Not permitted");
+      if (targetPharmacyId !== me.pharmacy_id) throw new Error("Forbidden");
+    }
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    // Single-row: delete any old rows then insert fresh
-    await supabaseAdmin.from("sms_settings").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-    const { error } = await supabaseAdmin.from("sms_settings").insert({
+    // Upsert per pharmacy
+    const { data: existing } = await supabaseAdmin
+      .from("sms_settings").select("id").eq("pharmacy_id", targetPharmacyId).maybeSingle();
+
+    const payload = {
       provider: "africastalking",
       at_username: data.username.trim(),
       at_api_key: data.apiKey.trim(),
       sender_id: data.senderId?.trim() || null,
+      pharmacy_id: targetPharmacyId,
       updated_by: context.userId,
-    });
-    if (error) throw new Error(error.message);
+    };
+
+    if (existing?.id) {
+      const { error } = await supabaseAdmin.from("sms_settings").update(payload).eq("id", existing.id);
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await supabaseAdmin.from("sms_settings").insert(payload);
+      if (error) throw new Error(error.message);
+    }
     return { ok: true };
   });
 
 /**
  * Staff (admin / pharmacy / accountant) send an SMS to one or more registered buyers.
- * Looks up credentials via service role — the client never sees the API key.
+ * Uses the caller's pharmacy Africa's Talking credentials.
  */
 export const sendBulkSms = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -61,30 +100,29 @@ export const sendBulkSms = createServerFn({ method: "POST" })
     const { data: me } = await context.supabase
       .from("profiles").select("id, role, pharmacy_id, is_director").eq("id", context.userId).maybeSingle();
     if (!me) throw new Error("Not signed in");
-    const allowed = me.is_director || ["admin", "pharmacy", "accountant"].includes(me.role);
+    // Director is intentionally NOT allowed to send messages.
+    const allowed = !me.is_director && ["admin", "pharmacy", "accountant"].includes(me.role);
     if (!allowed) throw new Error("Not permitted to send messages");
+    if (!me.pharmacy_id) throw new Error("Your account is not linked to a pharmacy");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Load buyers (scoped to caller's pharmacy unless director)
-    let q = supabaseAdmin.from("wholesale_buyers")
+    // Load buyers scoped to caller's pharmacy
+    const { data: buyers, error: bErr } = await supabaseAdmin
+      .from("wholesale_buyers")
       .select("id, name, phone, pharmacy_id")
-      .in("id", data.buyerIds);
-    if (!me.is_director && me.pharmacy_id) q = q.eq("pharmacy_id", me.pharmacy_id);
-    const { data: buyers, error: bErr } = await q;
+      .in("id", data.buyerIds)
+      .eq("pharmacy_id", me.pharmacy_id);
     if (bErr) throw new Error(bErr.message);
     const targets = (buyers ?? []).filter(b => b.phone && b.phone.trim());
     if (targets.length === 0) throw new Error("No recipients with a phone number");
 
-    // Load credentials
+    // Credentials for the caller's pharmacy
     const { data: cfg } = await supabaseAdmin
       .from("sms_settings")
       .select("at_username, at_api_key, sender_id")
-      .order("updated_at", { ascending: false })
-      .limit(1)
+      .eq("pharmacy_id", me.pharmacy_id)
       .maybeSingle();
-
-    const pharmacyId = me.is_director ? (targets[0]?.pharmacy_id ?? null) : me.pharmacy_id;
 
     if (!cfg?.at_username || !cfg?.at_api_key) {
       const rows = targets.map(b => ({
@@ -95,13 +133,12 @@ export const sendBulkSms = createServerFn({ method: "POST" })
         recipient_phone: b.phone as string,
         body: data.body,
         status: "failed",
-        provider_response: { error: "SMS settings not configured. Ask the Director to add Africa's Talking username and API key." },
+        provider_response: { error: "SMS credentials not configured for this pharmacy." },
       }));
       await supabaseAdmin.from("messages").insert(rows);
-      throw new Error("SMS provider not configured. Ask the Director to add Africa's Talking credentials.");
+      throw new Error("SMS credentials not configured for this pharmacy. Ask your Director or Admin to add Africa's Talking credentials.");
     }
 
-    // Normalize phone numbers to E.164-ish (assume Kenya +254 if starts with 0)
     const normalize = (p: string) => {
       const digits = p.replace(/[^\d+]/g, "");
       if (digits.startsWith("+")) return digits;
@@ -117,7 +154,6 @@ export const sendBulkSms = createServerFn({ method: "POST" })
     form.set("message", data.body);
     if (cfg.sender_id) form.set("from", cfg.sender_id);
 
-    // Sandbox vs live: username "sandbox" hits the sandbox endpoint.
     const endpoint = cfg.at_username === "sandbox"
       ? "https://api.sandbox.africastalking.com/version1/messaging"
       : "https://api.africastalking.com/version1/messaging";
@@ -162,5 +198,5 @@ export const sendBulkSms = createServerFn({ method: "POST" })
     await supabaseAdmin.from("messages").insert(rows);
 
     const sentCount = rows.filter(r => r.status === "sent").length;
-    return { ok: sentCount > 0, sent: sentCount, total: rows.length, provider: providerResponse, pharmacyId };
+    return { ok: sentCount > 0, sent: sentCount, total: rows.length, provider: providerResponse };
   });

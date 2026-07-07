@@ -38,8 +38,8 @@ function InventoryPage() {
     : [{ to: "/inventory", label: "Inventory" }];
   return (
     <AppShell title="Inventory Management" nav={nav}>
-      {!loading && profile && profile.role !== "inventory" && profile.role !== "admin" ? (
-        <p className="text-destructive">Access denied. Inventory or Admin only.</p>
+      {!loading && profile && (profile.is_director || (profile.role !== "inventory" && profile.role !== "admin")) ? (
+        <p className="text-destructive font-semibold">You don't have permission to access this page.</p>
       ) : (
         <Tabs defaultValue="stock" className="space-y-6">
           <TabsList>

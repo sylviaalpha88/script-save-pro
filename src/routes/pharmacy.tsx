@@ -31,7 +31,7 @@ function PharmacyPage() {
   return (
     <AppShell title="Pharmacy – Sales" nav={nav}>
 
-      {!loading && profile && profile.role !== "pharmacy" && profile.role !== "admin" ? (
+      {!loading && profile && (profile.is_director || (profile.role !== "pharmacy" && profile.role !== "admin")) ? (
         <p className="text-destructive font-semibold">You don't have permission to access this page.</p>
       ) : (
         <Tabs defaultValue="retail" className="space-y-6">

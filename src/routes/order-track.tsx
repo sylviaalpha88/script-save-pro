@@ -36,7 +36,7 @@ function OrderTrackPage() {
   useEffect(() => {
     if (loading) return;
     if (!profile) { navigate({ to: "/auth" }); return; }
-    if (!["order_track", "admin", "pharmacy"].includes(profile.role)) { navigate({ to: "/" }); return; }
+    if (profile.is_director || !["order_track", "admin", "pharmacy"].includes(profile.role)) { navigate({ to: "/home" }); return; }
     loadOrders();
   }, [profile, loading]);
 

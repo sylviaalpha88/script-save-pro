@@ -110,11 +110,15 @@ export const createPharmacyAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: {
     pharmacyId: string; username: string; password: string; canEditSite: boolean;
+    atUsername?: string; atApiKey?: string; atSenderId?: string;
   }) => z.object({
     pharmacyId: z.string().uuid(),
     username: z.string().min(2).max(50),
     password: z.string().min(6).max(100),
     canEditSite: z.boolean(),
+    atUsername: z.string().max(120).optional().nullable(),
+    atApiKey: z.string().max(500).optional().nullable(),
+    atSenderId: z.string().max(30).optional().nullable(),
   }).parse(d))
   .handler(async ({ data, context }) => {
     await assertDirector(context.supabase, context.userId);
@@ -138,6 +142,27 @@ export const createPharmacyAdmin = createServerFn({ method: "POST" })
     if (pErr) {
       await supabaseAdmin.auth.admin.deleteUser(created.user.id);
       throw new Error(pErr.message);
+    }
+
+    // Optionally seed Africa's Talking credentials for this pharmacy
+    const atUser = data.atUsername?.trim();
+    const atKey = data.atApiKey?.trim();
+    if (atUser && atKey) {
+      const { data: existing } = await supabaseAdmin
+        .from("sms_settings").select("id").eq("pharmacy_id", data.pharmacyId).maybeSingle();
+      const payload = {
+        provider: "africastalking",
+        at_username: atUser,
+        at_api_key: atKey,
+        sender_id: data.atSenderId?.trim() || null,
+        pharmacy_id: data.pharmacyId,
+        updated_by: context.userId,
+      };
+      if (existing?.id) {
+        await supabaseAdmin.from("sms_settings").update(payload).eq("id", existing.id);
+      } else {
+        await supabaseAdmin.from("sms_settings").insert(payload);
+      }
     }
     return { ok: true };
   });
