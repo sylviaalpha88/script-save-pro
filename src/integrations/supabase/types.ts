@@ -590,6 +590,7 @@ export type Database = {
           at_username: string | null
           created_at: string
           id: string
+          pharmacy_id: string | null
           provider: string
           sender_id: string | null
           updated_at: string
@@ -600,6 +601,7 @@ export type Database = {
           at_username?: string | null
           created_at?: string
           id?: string
+          pharmacy_id?: string | null
           provider?: string
           sender_id?: string | null
           updated_at?: string
@@ -610,12 +612,21 @@ export type Database = {
           at_username?: string | null
           created_at?: string
           id?: string
+          pharmacy_id?: string | null
           provider?: string
           sender_id?: string | null
           updated_at?: string
           updated_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sms_settings_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       wholesale_buyers: {
         Row: {
