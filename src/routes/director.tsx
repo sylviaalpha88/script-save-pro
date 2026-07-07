@@ -5,11 +5,9 @@ import {
   createPharmacy, deletePharmacy,
   createPharmacyAdmin, deletePharmacyAdmin, updateAdminPermissions,
 } from "@/lib/admin.functions";
-import { getSmsSettings, saveSmsSettings } from "@/lib/messaging.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { useSiteBranding } from "@/lib/site-branding";
-import { MessagesPanel } from "@/components/MessagesPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Pill, LogOut, Trash2, Plus, Building2, MessageSquare, KeyRound } from "lucide-react";
+import { Pill, LogOut, Trash2, Plus, Building2, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/director")({
