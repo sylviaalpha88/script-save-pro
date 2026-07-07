@@ -168,6 +168,9 @@ function AdminsPanel() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [canEdit, setCanEdit] = useState(false);
+  const [atUsername, setAtUsername] = useState("");
+  const [atApiKey, setAtApiKey] = useState("");
+  const [atSenderId, setAtSenderId] = useState("");
 
   const create = useServerFn(createPharmacyAdmin);
   const del = useServerFn(deletePharmacyAdmin);
@@ -185,9 +188,15 @@ function AdminsPanel() {
     e.preventDefault();
     if (!pharmacyId) { toast.error("Pick a pharmacy"); return; }
     try {
-      await create({ data: { pharmacyId, username, password, canEditSite: canEdit } });
+      await create({ data: {
+        pharmacyId, username, password, canEditSite: canEdit,
+        atUsername: atUsername.trim() || undefined,
+        atApiKey: atApiKey.trim() || undefined,
+        atSenderId: atSenderId.trim() || undefined,
+      } });
       toast.success("Admin created");
       setUsername(""); setPassword(""); setCanEdit(false);
+      setAtUsername(""); setAtApiKey(""); setAtSenderId("");
       await load();
     } catch (err) { toast.error((err as Error).message); }
   };
@@ -214,10 +223,24 @@ function AdminsPanel() {
               </div>
               <Switch checked={canEdit} onCheckedChange={setCanEdit} />
             </div>
+
+            <div className="rounded-md border p-3 space-y-3 bg-muted/30">
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <MessageSquare className="h-4 w-4" /> Africa's Talking (SMS) — for this pharmacy
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Optional. Adds SMS credentials for this pharmacy so its Admin, Pharmacy and Accountant staff can send messages to their buyers. Stored securely — only shown to the pharmacy Admin and Director.
+              </div>
+              <div><Label>AT username</Label><Input value={atUsername} onChange={e => setAtUsername(e.target.value)} placeholder="sandbox or live username" /></div>
+              <div><Label>AT API key</Label><Input type="password" value={atApiKey} onChange={e => setAtApiKey(e.target.value)} placeholder="atsk_..." /></div>
+              <div><Label>Sender ID (optional)</Label><Input value={atSenderId} onChange={e => setAtSenderId(e.target.value)} maxLength={30} /></div>
+            </div>
+
             <Button type="submit" className="w-full">Create Admin</Button>
           </form>
         </CardContent>
       </Card>
+
 
       <Card>
         <CardHeader><CardTitle>All Pharmacy Admins ({admins.length})</CardTitle></CardHeader>
