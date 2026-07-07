@@ -39,7 +39,19 @@ export function SiteBrandingProvider({ children }: { children: ReactNode }) {
       .channel("site-branding")
       .on("postgres_changes", { event: "*", schema: "public", table: "site_content", filter: "section=eq.home" }, load)
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    const { data: authSub } = supabase.auth.onAuthStateChange(() => { load(); });
+    const onVisible = () => { if (document.visibilityState === "visible") load(); };
+    const onFocus = () => load();
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onFocus);
+    const poll = window.setInterval(load, 30000);
+    return () => {
+      supabase.removeChannel(ch);
+      authSub.subscription.unsubscribe();
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
+      window.clearInterval(poll);
+    };
   }, []);
 
   useEffect(() => {
