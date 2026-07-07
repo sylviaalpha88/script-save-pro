@@ -46,8 +46,8 @@ function AdminPage() {
   return (
     <AppShell title="Admin Dashboard" nav={nav}>
 
-      {!loading && profile?.role !== "admin" ? (
-        <p className="text-destructive">Access denied. Admin only.</p>
+      {!loading && (profile?.role !== "admin" || profile?.is_director) ? (
+        <p className="text-destructive font-semibold">You don't have permission to access this page.</p>
       ) : (
         <Tabs defaultValue="sales" className="space-y-6">
           <TabsList>
