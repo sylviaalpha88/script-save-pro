@@ -680,7 +680,7 @@ function BuyersPanel() {
       )}
       <div className="border rounded-md overflow-x-auto">
         <Table>
-          <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Phone</TableHead><TableHead>ID</TableHead><TableHead>License</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Buyer / Facility Name</TableHead><TableHead>Email</TableHead><TableHead>ID NO</TableHead><TableHead>Phone</TableHead><TableHead>License</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
           <TableBody>
             {filtered.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No buyers yet</TableCell></TableRow>}
             {filtered.map(b => (
