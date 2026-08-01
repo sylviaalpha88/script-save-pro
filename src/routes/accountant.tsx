@@ -30,15 +30,8 @@ const canEdit = (createdAt: string) => Date.now() - new Date(createdAt).getTime(
 
 function AccountantPage() {
   const { profile, loading } = useAuth();
-  const isAdmin = profile?.role === "admin";
-  const nav = isAdmin
-    ? [
-        { to: "/admin", label: "Dashboard" },
-        { to: "/pharmacy", label: "Pharmacy" },
-        { to: "/inventory", label: "Inventory" },
-        { to: "/accountant", label: "Accountant" },
-      ]
-    : [{ to: "/accountant", label: "Accountant" }];
+
+
 
   const [date, setDate] = useState(todayISO());
   const [cash, setCash] = useState("");
@@ -91,7 +84,7 @@ function AccountantPage() {
   };
 
   return (
-    <AppShell title="Accountant – Daily Sales Report" nav={nav}>
+    <AppShell title="Accountant" subtitle="Handle accounts, expenses and financial reports">
       {!loading && profile && (profile.is_director || (profile.role !== "accountant" && profile.role !== "admin")) ? (
         <p className="text-destructive font-semibold">You don't have permission to access this page.</p>
       ) : (
