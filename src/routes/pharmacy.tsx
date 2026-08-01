@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/lib/auth-context";
 import { AppShell } from "@/components/AppShell";
-import { MessagesPanel } from "@/components/MessagesPanel";
+
 import { supabase } from "@/integrations/supabase/client";
 import { registerBuyer } from "@/lib/buyer.functions";
 import { deleteBuyerAccount } from "@/lib/admin.functions";
@@ -31,22 +31,25 @@ function PharmacyPage() {
       {!loading && profile && (profile.is_director || (profile.role !== "pharmacy" && profile.role !== "admin")) ? (
         <p className="text-destructive font-semibold">You don't have permission to access this page.</p>
       ) : (
-        <Tabs defaultValue="retail" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="retail">Retail (Patients)</TabsTrigger>
+        <Tabs defaultValue="buyer_orders" className="space-y-6">
+          <TabsList className="flex-wrap h-auto">
+            <TabsTrigger value="buyer_orders">Buyers Order</TabsTrigger>
+            <TabsTrigger value="today">Today</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
+            <TabsTrigger value="daily">Daily Report</TabsTrigger>
+            <TabsTrigger value="retail">Retail</TabsTrigger>
             <TabsTrigger value="wholesale">Wholesale</TabsTrigger>
-            <TabsTrigger value="dispensed">Dispensed</TabsTrigger>
-            <TabsTrigger value="buyers">Buyer Accounts</TabsTrigger>
-            <TabsTrigger value="buyer_orders">Buyer Orders</TabsTrigger>
-            <TabsTrigger value="messages">Messages</TabsTrigger>
+            <TabsTrigger value="orders_review">Order Review</TabsTrigger>
           </TabsList>
+          <TabsContent value="buyer_orders"><BuyersPanel /></TabsContent>
+          <TabsContent value="today"><BuyerDispensedPanel mode="today" /></TabsContent>
+          <TabsContent value="history"><BuyerDispensedPanel mode="history" /></TabsContent>
+          <TabsContent value="daily"><DailyReportPanel /></TabsContent>
           <TabsContent value="retail"><RetailForm /></TabsContent>
           <TabsContent value="wholesale"><WholesaleForm /></TabsContent>
-          <TabsContent value="dispensed"><DispensedPanel /></TabsContent>
-          <TabsContent value="buyers"><BuyersPanel /></TabsContent>
-          <TabsContent value="buyer_orders"><BuyerOrdersPanel /></TabsContent>
-          <TabsContent value="messages"><MessagesPanel /></TabsContent>
+          <TabsContent value="orders_review"><BuyerOrdersPanel /></TabsContent>
         </Tabs>
+
 
       )}
     </AppShell>
@@ -335,84 +338,167 @@ type DispRow = {
 
 function todayISO() { return new Date().toISOString().slice(0, 10); }
 
-function DispensedPanel() {
+type BuyerGroup = {
+  key: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  id_number: string | null;
+  location: string | null;
+  items: DispRow[];
+  total: number;
+};
+
+function BuyerDispensedPanel({ mode }: { mode: "today" | "history" }) {
   const [rows, setRows] = useState<DispRow[]>([]);
+  const [buyerInfo, setBuyerInfo] = useState<WBuyer[]>([]);
   const [q, setQ] = useState("");
   const [from, setFrom] = useState(todayISO());
   const [to, setTo] = useState(todayISO());
+  const [open, setOpen] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const load = async () => {
+  const load = async (f = from, t = to) => {
     const { data, error } = await supabase
       .from("sale_items")
       .select("id, created_at, sale_id, drug_id, drug_name, quantity, unit_price, subtotal, sales(sale_type, customer_name), drugs(stock_quantity, min_stock, unit)")
-      .gte("created_at", `${from}T00:00:00`)
-      .lte("created_at", `${to}T23:59:59`)
+      .gte("created_at", `${f}T00:00:00`)
+      .lte("created_at", `${t}T23:59:59`)
       .order("created_at", { ascending: false })
-      .limit(500);
+      .limit(1000);
     if (error) { toast.error(error.message); return; }
     setRows((data as unknown as DispRow[]) ?? []);
   };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
 
-  const filtered = q.trim()
-    ? rows.filter(r =>
-        r.drug_name.toLowerCase().includes(q.toLowerCase()) ||
-        (r.sales?.customer_name ?? "").toLowerCase().includes(q.toLowerCase()))
-    : rows;
+  useEffect(() => {
+    supabase.from("wholesale_buyers")
+      .select("id, user_id, name, email, id_number, phone, location, license_number, license_pdf_path, status, created_at")
+      .then(({ data }) => setBuyerInfo((data as WBuyer[]) ?? []));
+    if (mode === "today") { const t = todayISO(); setFrom(t); setTo(t); load(t, t); }
+    else load();
+    /* eslint-disable-next-line */
+  }, [mode]);
+
+  const groups = useMemo(() => {
+    const byName = new Map<string, WBuyer>();
+    buyerInfo.forEach(b => byName.set(b.name.trim().toLowerCase(), b));
+    const map = new Map<string, BuyerGroup>();
+    rows.forEach(r => {
+      const name = r.sales?.customer_name?.trim() || "Walk-in customer";
+      const key = name.toLowerCase();
+      let g = map.get(key);
+      if (!g) {
+        const b = byName.get(key);
+        g = {
+          key, name,
+          email: b?.email ?? null, phone: b?.phone ?? null,
+          id_number: b?.id_number ?? null, location: b?.location ?? null,
+          items: [], total: 0,
+        };
+        map.set(key, g);
+      }
+      g.items.push(r);
+      g.total += Number(r.subtotal);
+    });
+    const list = [...map.values()];
+    return q.trim()
+      ? list.filter(g => [g.name, g.email, g.phone, g.id_number].some(v => (v ?? "").toLowerCase().includes(q.toLowerCase())))
+      : list;
+  }, [rows, buyerInfo, q]);
 
   return (
     <Card>
       <CardContent className="p-5 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="font-semibold">Dispensed Drugs</div>
-            <div className="text-xs text-muted-foreground">Showing drugs sold between selected dates. Defaults to today.</div>
+            <div className="font-semibold">{mode === "today" ? "Dispensed Today" : "Dispensed History"}</div>
+            <div className="text-xs text-muted-foreground">
+              Click a buyer to see the items {mode === "today" ? "sold today" : "sold within the selected dates"}.
+            </div>
           </div>
-          <Input className="max-w-xs" placeholder="Search drug or customer…" value={q} onChange={e=>setQ(e.target.value)} />
+          <Input className="max-w-xs" placeholder="Search buyer name / email / phone / ID…" value={q} onChange={e => setQ(e.target.value)} />
         </div>
-        <div className="flex flex-wrap items-end gap-3">
-          <div><Label className="text-xs">From</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
-          <div><Label className="text-xs">To</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
-          <Button onClick={load}>Apply</Button>
-          <Button variant="outline" onClick={() => { const t = todayISO(); setFrom(t); setTo(t); setTimeout(load, 0); }}>Today</Button>
-        </div>
+
+        {mode === "history" && (
+          <div className="flex flex-wrap items-end gap-3">
+            <div><Label className="text-xs">From</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
+            <div><Label className="text-xs">To</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
+            <Button onClick={() => load()}>Apply</Button>
+            <Button variant="outline" onClick={() => { const t = todayISO(); setFrom(t); setTo(t); load(t, t); }}>Today</Button>
+          </div>
+        )}
+
         <div className="border rounded-md overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Drug</TableHead>
-                <TableHead className="text-right">Qty</TableHead>
-                <TableHead className="text-right">Subtotal</TableHead>
-                <TableHead className="text-right">Stock Left</TableHead>
-                <TableHead></TableHead>
+                <TableHead>Buyer</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>ID NO</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead className="text-right">Items</TableHead>
+                <TableHead className="text-right">Total</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">No dispenses in selected range</TableCell></TableRow>}
-              {filtered.map(r => {
-                const stock = r.drugs?.stock_quantity ?? 0;
-                const low = r.drugs ? stock < r.drugs.min_stock : false;
-                return (
-                  <TableRow key={r.id}>
-                    <TableCell className="whitespace-nowrap">{new Date(r.created_at).toLocaleString()}</TableCell>
-                    <TableCell className="capitalize">{r.sales?.sale_type ?? "—"}</TableCell>
-                    <TableCell>{r.sales?.customer_name ?? "—"}</TableCell>
-                    <TableCell className="font-medium">{r.drug_name} <span className="text-xs text-muted-foreground">({r.drugs?.unit})</span></TableCell>
-                    <TableCell className="text-right">{r.quantity}</TableCell>
-                    <TableCell className="text-right">KSh {Number(r.subtotal).toFixed(2)}</TableCell>
-                    <TableCell className={`text-right font-medium ${low ? "text-destructive" : ""}`}>{stock}</TableCell>
-                    <TableCell className="text-right">
-                      <Button size="sm" variant="ghost" onClick={() => navigate({ to: "/invoice/$id", params: { id: r.sale_id } })}>
-                        <FileText className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
+              {groups.length === 0 && (
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No sales found.</TableCell></TableRow>
+              )}
+              {groups.map(g => (
+                <Fragment key={g.key}>
+                  <TableRow key={g.key} className="cursor-pointer hover:bg-accent/60"
+                    onClick={() => setOpen(open === g.key ? null : g.key)}>
+                    <TableCell className="font-medium">{g.name}<div className="text-xs text-muted-foreground">{g.location ?? ""}</div></TableCell>
+                    <TableCell>{g.email ?? "—"}</TableCell>
+                    <TableCell>{g.id_number ?? "—"}</TableCell>
+                    <TableCell>{g.phone ?? "—"}</TableCell>
+                    <TableCell className="text-right">{g.items.length}</TableCell>
+                    <TableCell className="text-right font-semibold">KSh {g.total.toFixed(2)}</TableCell>
                   </TableRow>
-                );
-              })}
+                  {open === g.key && (
+                    <TableRow key={`${g.key}-items`}>
+                      <TableCell colSpan={6} className="bg-muted/40">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Date</TableHead>
+                              <TableHead>Type</TableHead>
+                              <TableHead>Drug</TableHead>
+                              <TableHead className="text-right">Qty</TableHead>
+                              <TableHead className="text-right">Unit Price</TableHead>
+                              <TableHead className="text-right">Subtotal</TableHead>
+                              <TableHead className="text-right">Stock Left</TableHead>
+                              <TableHead></TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {g.items.map(r => {
+                              const stock = r.drugs?.stock_quantity ?? 0;
+                              const low = r.drugs ? stock < r.drugs.min_stock : false;
+                              return (
+                                <TableRow key={r.id}>
+                                  <TableCell className="whitespace-nowrap">{new Date(r.created_at).toLocaleString()}</TableCell>
+                                  <TableCell className="capitalize">{r.sales?.sale_type ?? "—"}</TableCell>
+                                  <TableCell className="font-medium">{r.drug_name} <span className="text-xs text-muted-foreground">({r.drugs?.unit})</span></TableCell>
+                                  <TableCell className="text-right">{r.quantity}</TableCell>
+                                  <TableCell className="text-right">KSh {Number(r.unit_price).toFixed(2)}</TableCell>
+                                  <TableCell className="text-right">KSh {Number(r.subtotal).toFixed(2)}</TableCell>
+                                  <TableCell className={`text-right font-medium ${low ? "text-destructive" : ""}`}>{stock}</TableCell>
+                                  <TableCell className="text-right">
+                                    <Button size="sm" variant="ghost" onClick={() => navigate({ to: "/invoice/$id", params: { id: r.sale_id } })}>
+                                      <FileText className="h-4 w-4" />
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </Fragment>
+              ))}
             </TableBody>
           </Table>
         </div>
@@ -420,6 +506,57 @@ function DispensedPanel() {
     </Card>
   );
 }
+
+type DailySale = { id: string; sale_type: string; total: number; amount_paid: number; payment_method: string | null };
+
+function DailyReportPanel() {
+  const [day, setDay] = useState(todayISO());
+  const [sales, setSales] = useState<DailySale[]>([]);
+
+  const load = async (d = day) => {
+    const { data, error } = await supabase.from("sales")
+      .select("id, sale_type, total, amount_paid, payment_method")
+      .gte("created_at", `${d}T00:00:00`).lte("created_at", `${d}T23:59:59`);
+    if (error) { toast.error(error.message); return; }
+    setSales((data as DailySale[]) ?? []);
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+
+  const sum = (f: (s: DailySale) => boolean) => sales.filter(f).reduce((a, b) => a + Number(b.total), 0);
+  const method = (m: string) => sales
+    .filter(s => (s.payment_method ?? "").toLowerCase().includes(m))
+    .reduce((a, b) => a + Number(b.amount_paid), 0);
+
+  const cards = [
+    { label: "Retail sales", value: sum(s => s.sale_type === "retail") },
+    { label: "Wholesale sales", value: sum(s => s.sale_type === "wholesale") },
+    { label: "Cash received", value: method("cash") },
+    { label: "M-Pesa received", value: method("mpesa") + method("m-pesa") },
+    { label: "Total sales", value: sum(() => true) },
+  ];
+
+  return (
+    <Card><CardContent className="p-5 space-y-4">
+      <div className="flex flex-wrap items-end gap-3 justify-between">
+        <div className="font-semibold">Daily Report</div>
+        <div className="flex items-end gap-2">
+          <div><Label className="text-xs">Date</Label><Input type="date" value={day} onChange={e => setDay(e.target.value)} /></div>
+          <Button onClick={() => load()}>Apply</Button>
+        </div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        {cards.map(c => (
+          <div key={c.label} className="rounded-xl border bg-card p-4">
+            <div className="text-xs text-muted-foreground">{c.label}</div>
+            <div className="text-xl font-bold mt-1">KSh {c.value.toFixed(2)}</div>
+          </div>
+        ))}
+      </div>
+      <p className="text-xs text-muted-foreground">{sales.length} sale(s) recorded on {day}.</p>
+    </CardContent></Card>
+  );
+}
+
 
 
 // =============== BUYER ACCOUNTS PANEL ===============
@@ -543,15 +680,15 @@ function BuyersPanel() {
       )}
       <div className="border rounded-md overflow-x-auto">
         <Table>
-          <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Phone</TableHead><TableHead>ID</TableHead><TableHead>License</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Buyer / Facility Name</TableHead><TableHead>Email</TableHead><TableHead>ID NO</TableHead><TableHead>Phone</TableHead><TableHead>License</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
           <TableBody>
             {filtered.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No buyers yet</TableCell></TableRow>}
             {filtered.map(b => (
               <TableRow key={b.id}>
                 <TableCell className="font-medium">{b.name}<div className="text-xs text-muted-foreground">{b.location}</div></TableCell>
                 <TableCell>{b.email}</TableCell>
-                <TableCell>{b.phone}</TableCell>
                 <TableCell>{b.id_number}</TableCell>
+                <TableCell>{b.phone}</TableCell>
                 <TableCell>{b.license_number}{b.license_pdf_path && <Button variant="link" size="sm" onClick={() => openLicense(b.license_pdf_path!)}>view PDF</Button>}</TableCell>
                 <TableCell><span className={b.status === "approved" ? "text-green-600" : b.status === "rejected" ? "text-destructive" : "text-amber-600"}>{b.status}</span></TableCell>
                 <TableCell className="text-right space-x-1 whitespace-nowrap">

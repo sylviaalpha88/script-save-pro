@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as PharmacyRouteImport } from './routes/pharmacy'
 import { Route as OrderTrackRouteImport } from './routes/order-track'
+import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as InventoryRouteImport } from './routes/inventory'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as DirectorRouteImport } from './routes/director'
@@ -36,6 +37,11 @@ const PharmacyRoute = PharmacyRouteImport.update({
 const OrderTrackRoute = OrderTrackRouteImport.update({
   id: '/order-track',
   path: '/order-track',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MessagesRoute = MessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InventoryRoute = InventoryRouteImport.update({
@@ -98,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/director': typeof DirectorRoute
   '/home': typeof HomeRoute
   '/inventory': typeof InventoryRoute
+  '/messages': typeof MessagesRoute
   '/order-track': typeof OrderTrackRoute
   '/pharmacy': typeof PharmacyRoute
   '/register': typeof RegisterRoute
@@ -113,6 +120,7 @@ export interface FileRoutesByTo {
   '/director': typeof DirectorRoute
   '/home': typeof HomeRoute
   '/inventory': typeof InventoryRoute
+  '/messages': typeof MessagesRoute
   '/order-track': typeof OrderTrackRoute
   '/pharmacy': typeof PharmacyRoute
   '/register': typeof RegisterRoute
@@ -129,6 +137,7 @@ export interface FileRoutesById {
   '/director': typeof DirectorRoute
   '/home': typeof HomeRoute
   '/inventory': typeof InventoryRoute
+  '/messages': typeof MessagesRoute
   '/order-track': typeof OrderTrackRoute
   '/pharmacy': typeof PharmacyRoute
   '/register': typeof RegisterRoute
@@ -146,6 +155,7 @@ export interface FileRouteTypes {
     | '/director'
     | '/home'
     | '/inventory'
+    | '/messages'
     | '/order-track'
     | '/pharmacy'
     | '/register'
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/director'
     | '/home'
     | '/inventory'
+    | '/messages'
     | '/order-track'
     | '/pharmacy'
     | '/register'
@@ -176,6 +187,7 @@ export interface FileRouteTypes {
     | '/director'
     | '/home'
     | '/inventory'
+    | '/messages'
     | '/order-track'
     | '/pharmacy'
     | '/register'
@@ -192,6 +204,7 @@ export interface RootRouteChildren {
   DirectorRoute: typeof DirectorRoute
   HomeRoute: typeof HomeRoute
   InventoryRoute: typeof InventoryRoute
+  MessagesRoute: typeof MessagesRoute
   OrderTrackRoute: typeof OrderTrackRoute
   PharmacyRoute: typeof PharmacyRoute
   RegisterRoute: typeof RegisterRoute
@@ -220,6 +233,13 @@ declare module '@tanstack/react-router' {
       path: '/order-track'
       fullPath: '/order-track'
       preLoaderRoute: typeof OrderTrackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/messages': {
+      id: '/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof MessagesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/inventory': {
@@ -304,6 +324,7 @@ const rootRouteChildren: RootRouteChildren = {
   DirectorRoute: DirectorRoute,
   HomeRoute: HomeRoute,
   InventoryRoute: InventoryRoute,
+  MessagesRoute: MessagesRoute,
   OrderTrackRoute: OrderTrackRoute,
   PharmacyRoute: PharmacyRoute,
   RegisterRoute: RegisterRoute,
