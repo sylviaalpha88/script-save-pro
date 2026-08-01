@@ -687,8 +687,8 @@ function BuyersPanel() {
               <TableRow key={b.id}>
                 <TableCell className="font-medium">{b.name}<div className="text-xs text-muted-foreground">{b.location}</div></TableCell>
                 <TableCell>{b.email}</TableCell>
-                <TableCell>{b.phone}</TableCell>
                 <TableCell>{b.id_number}</TableCell>
+                <TableCell>{b.phone}</TableCell>
                 <TableCell>{b.license_number}{b.license_pdf_path && <Button variant="link" size="sm" onClick={() => openLicense(b.license_pdf_path!)}>view PDF</Button>}</TableCell>
                 <TableCell><span className={b.status === "approved" ? "text-green-600" : b.status === "rejected" ? "text-destructive" : "text-amber-600"}>{b.status}</span></TableCell>
                 <TableCell className="text-right space-x-1 whitespace-nowrap">
