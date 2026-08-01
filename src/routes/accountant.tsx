@@ -31,14 +31,8 @@ const canEdit = (createdAt: string) => Date.now() - new Date(createdAt).getTime(
 function AccountantPage() {
   const { profile, loading } = useAuth();
   const isAdmin = profile?.role === "admin";
-  const nav = isAdmin
-    ? [
-        { to: "/admin", label: "Dashboard" },
-        { to: "/pharmacy", label: "Pharmacy" },
-        { to: "/inventory", label: "Inventory" },
-        { to: "/accountant", label: "Accountant" },
-      ]
-    : [{ to: "/accountant", label: "Accountant" }];
+
+
 
   const [date, setDate] = useState(todayISO());
   const [cash, setCash] = useState("");
