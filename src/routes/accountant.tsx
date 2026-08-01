@@ -30,7 +30,6 @@ const canEdit = (createdAt: string) => Date.now() - new Date(createdAt).getTime(
 
 function AccountantPage() {
   const { profile, loading } = useAuth();
-  const isAdmin = profile?.role === "admin";
 
 
 
