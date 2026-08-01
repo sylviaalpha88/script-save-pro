@@ -123,7 +123,7 @@ function OrderTrackPage() {
   };
 
   return (
-    <AppShell title="Order Track" nav={[{ to: "/order-track", label: "Order Track" }]}>
+    <AppShell title="Order Track" subtitle="Track orders and delivery status">
       <div className="grid lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2"><Navigation className="h-5 w-5"/>Record Tracking Point</CardTitle></CardHeader>

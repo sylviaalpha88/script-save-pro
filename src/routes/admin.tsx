@@ -40,11 +40,8 @@ type SaleRow = {
 
 function AdminPage() {
   const { profile, loading } = useAuth();
-  const nav = profile?.can_edit_site
-    ? [...BASE_ADMIN_NAV, { to: "/director", label: "Public Site" }]
-    : BASE_ADMIN_NAV;
   return (
-    <AppShell title="Admin Dashboard" nav={nav}>
+    <AppShell title="Dashboard" subtitle="Sales, reports and administration">
 
       {!loading && (profile?.role !== "admin" || profile?.is_director) ? (
         <p className="text-destructive font-semibold">You don't have permission to access this page.</p>

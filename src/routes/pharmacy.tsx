@@ -25,11 +25,8 @@ type LineItem = { drug_id: string; drug_name: string; unit_price: number; quanti
 
 function PharmacyPage() {
   const { profile, loading } = useAuth();
-  const nav = profile?.role === "admin"
-    ? [{ to: "/admin", label: "Dashboard" }, { to: "/pharmacy", label: "Pharmacy" }, { to: "/inventory", label: "Inventory" }, { to: "/accountant", label: "Accountant" }]
-    : [{ to: "/pharmacy", label: "Pharmacy" }];
   return (
-    <AppShell title="Pharmacy – Sales" nav={nav}>
+    <AppShell title="Pharmacy" subtitle="Manage medicines sales and pharmacy operations">
 
       {!loading && profile && (profile.is_director || (profile.role !== "pharmacy" && profile.role !== "admin")) ? (
         <p className="text-destructive font-semibold">You don't have permission to access this page.</p>
