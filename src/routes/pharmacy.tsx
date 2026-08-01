@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/lib/auth-context";
 import { AppShell } from "@/components/AppShell";
@@ -445,7 +445,7 @@ function BuyerDispensedPanel({ mode }: { mode: "today" | "history" }) {
                 <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No sales found.</TableCell></TableRow>
               )}
               {groups.map(g => (
-                <>
+                <Fragment key={g.key}>
                   <TableRow key={g.key} className="cursor-pointer hover:bg-accent/60"
                     onClick={() => setOpen(open === g.key ? null : g.key)}>
                     <TableCell className="font-medium">{g.name}<div className="text-xs text-muted-foreground">{g.location ?? ""}</div></TableCell>
@@ -497,7 +497,7 @@ function BuyerDispensedPanel({ mode }: { mode: "today" | "history" }) {
                       </TableCell>
                     </TableRow>
                   )}
-                </>
+                </Fragment>
               ))}
             </TableBody>
           </Table>
