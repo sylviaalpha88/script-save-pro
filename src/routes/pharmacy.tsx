@@ -31,22 +31,25 @@ function PharmacyPage() {
       {!loading && profile && (profile.is_director || (profile.role !== "pharmacy" && profile.role !== "admin")) ? (
         <p className="text-destructive font-semibold">You don't have permission to access this page.</p>
       ) : (
-        <Tabs defaultValue="retail" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="retail">Retail (Patients)</TabsTrigger>
+        <Tabs defaultValue="buyer_orders" className="space-y-6">
+          <TabsList className="flex-wrap h-auto">
+            <TabsTrigger value="buyer_orders">Buyers Order</TabsTrigger>
+            <TabsTrigger value="today">Today</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
+            <TabsTrigger value="daily">Daily Report</TabsTrigger>
+            <TabsTrigger value="retail">Retail</TabsTrigger>
             <TabsTrigger value="wholesale">Wholesale</TabsTrigger>
-            <TabsTrigger value="dispensed">Dispensed</TabsTrigger>
-            <TabsTrigger value="buyers">Buyer Accounts</TabsTrigger>
-            <TabsTrigger value="buyer_orders">Buyer Orders</TabsTrigger>
-            <TabsTrigger value="messages">Messages</TabsTrigger>
+            <TabsTrigger value="orders_review">Order Review</TabsTrigger>
           </TabsList>
+          <TabsContent value="buyer_orders"><BuyersPanel /></TabsContent>
+          <TabsContent value="today"><BuyerDispensedPanel mode="today" /></TabsContent>
+          <TabsContent value="history"><BuyerDispensedPanel mode="history" /></TabsContent>
+          <TabsContent value="daily"><DailyReportPanel /></TabsContent>
           <TabsContent value="retail"><RetailForm /></TabsContent>
           <TabsContent value="wholesale"><WholesaleForm /></TabsContent>
-          <TabsContent value="dispensed"><DispensedPanel /></TabsContent>
-          <TabsContent value="buyers"><BuyersPanel /></TabsContent>
-          <TabsContent value="buyer_orders"><BuyerOrdersPanel /></TabsContent>
-          <TabsContent value="messages"><MessagesPanel /></TabsContent>
+          <TabsContent value="orders_review"><BuyerOrdersPanel /></TabsContent>
         </Tabs>
+
 
       )}
     </AppShell>
