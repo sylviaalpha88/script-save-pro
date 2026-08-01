@@ -20,6 +20,7 @@ const TILES: Tile[] = [
   { to: "/order-track", label: "Order Track", icon: <Truck className="h-5 w-5" />, show: () => true },
   { to: "/", label: "Public Site", icon: <Globe className="h-5 w-5" />, show: () => true },
   { to: "/director", label: "Admin Settings", icon: <UserCog className="h-5 w-5" />, show: (p) => !!p.can_edit_site },
+  { to: "/messages", label: "Messages", icon: <MessageSquare className="h-5 w-5" />, show: () => true },
 ];
 
 export function AppShell({
