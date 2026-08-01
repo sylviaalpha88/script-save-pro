@@ -85,7 +85,7 @@ function AccountantPage() {
   };
 
   return (
-    <AppShell title="Accountant – Daily Sales Report" nav={nav}>
+    <AppShell title="Accountant" subtitle="Handle accounts, expenses and financial reports">
       {!loading && profile && (profile.is_director || (profile.role !== "accountant" && profile.role !== "admin")) ? (
         <p className="text-destructive font-semibold">You don't have permission to access this page.</p>
       ) : (
