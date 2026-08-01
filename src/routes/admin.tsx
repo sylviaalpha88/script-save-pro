@@ -16,13 +16,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { createStaffUser, deleteStaffUser } from "@/lib/admin.functions";
 import { Trash2, Users, DollarSign, ShoppingCart, TrendingUp } from "lucide-react";
 
-const BASE_ADMIN_NAV = [
-  { to: "/admin", label: "Dashboard" },
-  { to: "/pharmacy", label: "Pharmacy" },
-  { to: "/inventory", label: "Inventory" },
-  { to: "/accountant", label: "Accountant" },
-  { to: "/order-track", label: "Order Track" },
-];
+
+
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
