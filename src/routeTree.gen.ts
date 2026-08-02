@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as ProcurementRouteImport } from './routes/procurement'
 import { Route as PharmacyRouteImport } from './routes/pharmacy'
 import { Route as OrderTrackRouteImport } from './routes/order-track'
 import { Route as MessagesRouteImport } from './routes/messages'
@@ -27,6 +28,11 @@ import { Route as BuyerInvoiceIdRouteImport } from './routes/buyer-invoice.$id'
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProcurementRoute = ProcurementRouteImport.update({
+  id: '/procurement',
+  path: '/procurement',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PharmacyRoute = PharmacyRouteImport.update({
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/messages': typeof MessagesRoute
   '/order-track': typeof OrderTrackRoute
   '/pharmacy': typeof PharmacyRoute
+  '/procurement': typeof ProcurementRoute
   '/register': typeof RegisterRoute
   '/buyer-invoice/$id': typeof BuyerInvoiceIdRoute
   '/invoice/$id': typeof InvoiceIdRoute
@@ -123,6 +130,7 @@ export interface FileRoutesByTo {
   '/messages': typeof MessagesRoute
   '/order-track': typeof OrderTrackRoute
   '/pharmacy': typeof PharmacyRoute
+  '/procurement': typeof ProcurementRoute
   '/register': typeof RegisterRoute
   '/buyer-invoice/$id': typeof BuyerInvoiceIdRoute
   '/invoice/$id': typeof InvoiceIdRoute
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   '/messages': typeof MessagesRoute
   '/order-track': typeof OrderTrackRoute
   '/pharmacy': typeof PharmacyRoute
+  '/procurement': typeof ProcurementRoute
   '/register': typeof RegisterRoute
   '/buyer-invoice/$id': typeof BuyerInvoiceIdRoute
   '/invoice/$id': typeof InvoiceIdRoute
@@ -158,6 +167,7 @@ export interface FileRouteTypes {
     | '/messages'
     | '/order-track'
     | '/pharmacy'
+    | '/procurement'
     | '/register'
     | '/buyer-invoice/$id'
     | '/invoice/$id'
@@ -174,6 +184,7 @@ export interface FileRouteTypes {
     | '/messages'
     | '/order-track'
     | '/pharmacy'
+    | '/procurement'
     | '/register'
     | '/buyer-invoice/$id'
     | '/invoice/$id'
@@ -190,6 +201,7 @@ export interface FileRouteTypes {
     | '/messages'
     | '/order-track'
     | '/pharmacy'
+    | '/procurement'
     | '/register'
     | '/buyer-invoice/$id'
     | '/invoice/$id'
@@ -207,6 +219,7 @@ export interface RootRouteChildren {
   MessagesRoute: typeof MessagesRoute
   OrderTrackRoute: typeof OrderTrackRoute
   PharmacyRoute: typeof PharmacyRoute
+  ProcurementRoute: typeof ProcurementRoute
   RegisterRoute: typeof RegisterRoute
   BuyerInvoiceIdRoute: typeof BuyerInvoiceIdRoute
   InvoiceIdRoute: typeof InvoiceIdRoute
@@ -219,6 +232,13 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/procurement': {
+      id: '/procurement'
+      path: '/procurement'
+      fullPath: '/procurement'
+      preLoaderRoute: typeof ProcurementRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pharmacy': {
@@ -327,6 +347,7 @@ const rootRouteChildren: RootRouteChildren = {
   MessagesRoute: MessagesRoute,
   OrderTrackRoute: OrderTrackRoute,
   PharmacyRoute: PharmacyRoute,
+  ProcurementRoute: ProcurementRoute,
   RegisterRoute: RegisterRoute,
   BuyerInvoiceIdRoute: BuyerInvoiceIdRoute,
   InvoiceIdRoute: InvoiceIdRoute,
