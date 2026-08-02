@@ -9,19 +9,19 @@ import { type ReactNode, useEffect } from "react";
 
 interface NavItem { to: string; label: string; }
 
-type Tile = { to: string; label: string; icon: ReactNode; show: (p: { role: string; can_edit_site?: boolean | null }) => boolean };
+type Tile = { to: string; label: string; icon: ReactNode; tone: string; show: (p: { role: string; can_edit_site?: boolean | null }) => boolean };
 
 const TILES: Tile[] = [
-  
-  { to: "/admin", label: "Dashboard", icon: <LayoutGrid className="h-5 w-5" />, show: () => true },
-  { to: "/pharmacy", label: "Pharmacy", icon: <Pill className="h-5 w-5" />, show: () => true },
-  { to: "/inventory", label: "Inventory", icon: <Package className="h-5 w-5" />, show: () => true },
-  { to: "/accountant", label: "Accountant", icon: <Calculator className="h-5 w-5" />, show: () => true },
-  { to: "/order-track", label: "Order Track", icon: <Truck className="h-5 w-5" />, show: () => true },
-  { to: "/", label: "Public Site", icon: <Globe className="h-5 w-5" />, show: () => true },
-  { to: "/director", label: "Admin Settings", icon: <UserCog className="h-5 w-5" />, show: (p) => !!p.can_edit_site },
-  { to: "/messages", label: "Messages", icon: <MessageSquare className="h-5 w-5" />, show: () => true },
+  { to: "/admin", label: "Dashboard", icon: <LayoutGrid className="h-5 w-5" />, tone: "bg-violet-50 text-violet-700 border-violet-100 hover:bg-violet-100", show: () => true },
+  { to: "/pharmacy", label: "Pharmacy", icon: <Pill className="h-5 w-5" />, tone: "bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100", show: () => true },
+  { to: "/inventory", label: "Inventory", icon: <Package className="h-5 w-5" />, tone: "bg-amber-50 text-amber-700 border-amber-100 hover:bg-amber-100", show: () => true },
+  { to: "/accountant", label: "Accountant", icon: <Calculator className="h-5 w-5" />, tone: "bg-rose-50 text-rose-700 border-rose-100 hover:bg-rose-100", show: () => true },
+  { to: "/order-track", label: "Order Track", icon: <Truck className="h-5 w-5" />, tone: "bg-sky-50 text-sky-700 border-sky-100 hover:bg-sky-100", show: () => true },
+  { to: "/", label: "Public Site", icon: <Globe className="h-5 w-5" />, tone: "bg-indigo-50 text-indigo-700 border-indigo-100 hover:bg-indigo-100", show: () => true },
+  { to: "/director", label: "Admin Settings", icon: <UserCog className="h-5 w-5" />, tone: "bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100", show: (p) => !!p.can_edit_site },
+  { to: "/messages", label: "Messages", icon: <MessageSquare className="h-5 w-5" />, tone: "bg-teal-50 text-teal-700 border-teal-100 hover:bg-teal-100", show: () => true },
 ];
+
 
 export function AppShell({
   title,
