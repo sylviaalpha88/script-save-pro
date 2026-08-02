@@ -12,7 +12,7 @@ interface NavItem { to: string; label: string; }
 type Tile = { to: string; label: string; icon: ReactNode; show: (p: { role: string; can_edit_site?: boolean | null }) => boolean };
 
 const TILES: Tile[] = [
-  { to: "/home", label: "Home", icon: <Home className="h-5 w-5" />, show: () => true },
+  
   { to: "/admin", label: "Dashboard", icon: <LayoutGrid className="h-5 w-5" />, show: () => true },
   { to: "/pharmacy", label: "Pharmacy", icon: <Pill className="h-5 w-5" />, show: () => true },
   { to: "/inventory", label: "Inventory", icon: <Package className="h-5 w-5" />, show: () => true },
