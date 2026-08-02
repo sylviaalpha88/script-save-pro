@@ -17,6 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Pill, LogOut, Trash2, Plus, Building2, MessageSquare } from "lucide-react";
+import { AccessPanel } from "@/components/AccessPanel";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/director")({
@@ -43,7 +44,7 @@ function DirectorPage() {
   }
 
   // Editors-only fallback (an Admin with can_edit_site but NOT the director)
-  const isEditorOnly = !profile.is_director && profile.can_edit_site;
+  const isEditorOnly = !profile.is_director && profile.role === "admin";
   const isDirector = profile.is_director;
 
   if (!isDirector && !isEditorOnly) {
@@ -82,15 +83,15 @@ function DirectorPage() {
       </header>
 
       <main className="max-w-6xl mx-auto p-4 space-y-6">
-        <Tabs defaultValue={isDirector ? "pharmacies" : "site"} className="space-y-6">
+        <Tabs defaultValue={isDirector ? "pharmacies" : "access"} className="space-y-6">
           <TabsList className="flex-wrap">
             {isDirector && <TabsTrigger value="pharmacies">Pharmacies</TabsTrigger>}
             {isDirector && <TabsTrigger value="admins">Pharmacy Admins</TabsTrigger>}
-            <TabsTrigger value="site">Public Site</TabsTrigger>
+            {!isDirector && <TabsTrigger value="access">Users &amp; Access</TabsTrigger>}
           </TabsList>
           {isDirector && <TabsContent value="pharmacies"><PharmaciesPanel /></TabsContent>}
           {isDirector && <TabsContent value="admins"><AdminsPanel /></TabsContent>}
-          <TabsContent value="site"><SitePanel /></TabsContent>
+          {!isDirector && <TabsContent value="access"><AccessPanel /></TabsContent>}
         </Tabs>
       </main>
     </div>
@@ -281,81 +282,3 @@ function AdminsPanel() {
     </div>
   );
 }
-
-// ===== Public Site Editor =====
-type Section = "home" | "about" | "services" | "vacancy" | "contacts";
-const SECTIONS: { key: Section; label: string }[] = [
-  { key: "home", label: "Home" },
-  { key: "about", label: "About Us" },
-  { key: "services", label: "Services" },
-  { key: "vacancy", label: "Vacancy" },
-  { key: "contacts", label: "Contacts Us" },
-];
-type Row = { section: string; title: string; body: string; image_url: string | null };
-
-function SitePanel() {
-  const [rows, setRows] = useState<Record<string, Row>>({});
-  const [loading, setLoading] = useState(true);
-
-  const load = async () => {
-    setLoading(true);
-    const { data, error } = await supabase.from("site_content").select("section, title, body, image_url");
-    if (error) { toast.error(error.message); setLoading(false); return; }
-    const map: Record<string, Row> = {};
-    SECTIONS.forEach(s => { map[s.key] = { section: s.key, title: "", body: "", image_url: null }; });
-    (data ?? []).forEach((r: any) => { map[r.section] = r as Row; });
-    setRows(map);
-    setLoading(false);
-  };
-  useEffect(() => { load(); }, []);
-
-  const update = (key: Section, patch: Partial<Row>) =>
-    setRows(prev => ({ ...prev, [key]: { ...prev[key], ...patch } }));
-
-  const onImage = (key: Section, file: File) => {
-    if (file.size > 2 * 1024 * 1024) { toast.error("Image too large (max 2 MB)"); return; }
-    const reader = new FileReader();
-    reader.onload = () => update(key, { image_url: String(reader.result) });
-    reader.readAsDataURL(file);
-  };
-
-  const save = async (key: Section) => {
-    const r = rows[key];
-    const { error } = await supabase.from("site_content").upsert({
-      section: r.section, title: r.title, body: r.body, image_url: r.image_url,
-      updated_at: new Date().toISOString(),
-    });
-    if (error) { toast.error(error.message); return; }
-    toast.success(`${key} saved`);
-  };
-
-  if (loading) return <p>Loading…</p>;
-  return (
-    <div className="space-y-6">
-      {SECTIONS.map(s => {
-        const r = rows[s.key];
-        return (
-          <Card key={s.key}>
-            <CardHeader><CardTitle>{s.label}</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              <div><Label>Title</Label><Input value={r.title} onChange={e => update(s.key, { title: e.target.value })} /></div>
-              <div><Label>Words / Description</Label><Textarea rows={4} value={r.body} onChange={e => update(s.key, { body: e.target.value })} /></div>
-              <div>
-                <Label>Photo</Label>
-                <Input type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) onImage(s.key, f); }} />
-                {r.image_url && (
-                  <div className="mt-2">
-                    <Button variant="ghost" size="sm" onClick={() => update(s.key, { image_url: null })}>Remove image</Button>
-                  </div>
-                )}
-              </div>
-              <Button onClick={() => save(s.key)}>Save {s.label}</Button>
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
-  );
-}
-
-
