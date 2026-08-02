@@ -198,11 +198,12 @@ export const deletePharmacyAdmin = createServerFn({ method: "POST" })
 
 export const createStaffUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { username: string; password: string; role: "pharmacy" | "inventory" | "accountant" | "order_track" }) =>
+  .inputValidator((d: { username: string; password: string; role: "pharmacy" | "inventory" | "accountant" | "order_track"; access?: string[] }) =>
     z.object({
       username: z.string().min(2).max(50),
       password: z.string().min(6).max(100),
       role: z.enum(["pharmacy", "inventory", "accountant", "order_track"]),
+      access: z.array(z.string().max(30)).max(20).optional(),
     }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: me } = await context.supabase
@@ -227,6 +228,7 @@ export const createStaffUser = createServerFn({ method: "POST" })
       username: data.username,
       role: data.role,
       pharmacy_id: me.pharmacy_id,
+      access: data.access ?? [],
     });
     if (pErr) {
       await supabaseAdmin.auth.admin.deleteUser(created.user.id);
@@ -291,5 +293,30 @@ export const deleteBuyerAccount = createServerFn({ method: "POST" })
       await supabaseAdmin.from("profiles").delete().eq("id", buyer.user_id);
       await supabaseAdmin.auth.admin.deleteUser(buyer.user_id).catch(() => {});
     }
+    return { ok: true };
+  });
+
+/** Pharmacy Admin updates which modules one of their staff can open. */
+export const updateStaffAccess = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { userId: string; access: string[] }) =>
+    z.object({
+      userId: z.string().uuid(),
+      access: z.array(z.string().max(30)).max(20),
+    }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: me } = await context.supabase
+      .from("profiles").select("role, pharmacy_id, is_director").eq("id", context.userId).maybeSingle();
+    if (!me || me.role !== "admin" || me.is_director) throw new Error("Pharmacy Admin only");
+    if (!me.pharmacy_id) throw new Error("Your account is not linked to a pharmacy");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: target } = await supabaseAdmin
+      .from("profiles").select("id, pharmacy_id, role").eq("id", data.userId).maybeSingle();
+    if (!target || target.pharmacy_id !== me.pharmacy_id) throw new Error("Forbidden");
+    if (target.role === "admin") throw new Error("Cannot change another admin");
+
+    const { error } = await supabaseAdmin.from("profiles").update({ access: data.access }).eq("id", data.userId);
+    if (error) throw new Error(error.message);
     return { ok: true };
   });
