@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Pill } from "lucide-react";
 import heroImg from "@/assets/pharmacy-hero.jpg";
+import { VacancySection } from "@/components/VacancySection";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -117,7 +118,7 @@ function Index() {
 
       {/* Editable sections */}
       <div className="max-w-5xl mx-auto px-6 py-16 space-y-16">
-        {sections.filter(s => s.section !== "home").map(s => (
+        {sections.filter(s => s.section !== "home" && s.section !== "vacancy").map(s => (
           <section key={s.section} id={s.section} className="grid md:grid-cols-2 gap-8 items-center scroll-mt-20">
             {s.image_url ? (
               <img src={s.image_url} alt={s.title} className="w-full rounded-lg shadow-md object-cover max-h-80" />
@@ -132,6 +133,7 @@ function Index() {
             </div>
           </section>
         ))}
+        <VacancySection />
       </div>
 
       <footer className="border-t py-6 text-center text-sm text-muted-foreground">
