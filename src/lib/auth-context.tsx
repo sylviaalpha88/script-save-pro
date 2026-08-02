@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export type Role = "admin" | "pharmacy" | "inventory" | "accountant" | "buyer";
+export type Role = "admin" | "pharmacy" | "inventory" | "accountant" | "buyer" | "order_track";
 export interface Profile {
   id: string;
   username: string;
@@ -9,6 +9,7 @@ export interface Profile {
   pharmacy_id: string | null;
   is_director: boolean;
   can_edit_site: boolean;
+  access: string[] | null;
 }
 
 interface AuthCtx {
@@ -39,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const { data } = await supabase
       .from("profiles")
-      .select("id, username, role, pharmacy_id, is_director, can_edit_site")
+      .select("id, username, role, pharmacy_id, is_director, can_edit_site, access")
       .eq("id", user.id)
       .maybeSingle();
     setProfile((data as Profile) ?? null);
