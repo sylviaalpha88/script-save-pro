@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VacancyRouteImport } from './routes/vacancy'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as PublicSiteRouteImport } from './routes/public-site'
 import { Route as ProcurementRouteImport } from './routes/procurement'
@@ -26,6 +27,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as InvoiceIdRouteImport } from './routes/invoice.$id'
 import { Route as BuyerInvoiceIdRouteImport } from './routes/buyer-invoice.$id'
 
+const VacancyRoute = VacancyRouteImport.update({
+  id: '/vacancy',
+  path: '/vacancy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/procurement': typeof ProcurementRoute
   '/public-site': typeof PublicSiteRoute
   '/register': typeof RegisterRoute
+  '/vacancy': typeof VacancyRoute
   '/buyer-invoice/$id': typeof BuyerInvoiceIdRoute
   '/invoice/$id': typeof InvoiceIdRoute
 }
@@ -140,6 +147,7 @@ export interface FileRoutesByTo {
   '/procurement': typeof ProcurementRoute
   '/public-site': typeof PublicSiteRoute
   '/register': typeof RegisterRoute
+  '/vacancy': typeof VacancyRoute
   '/buyer-invoice/$id': typeof BuyerInvoiceIdRoute
   '/invoice/$id': typeof InvoiceIdRoute
 }
@@ -159,6 +167,7 @@ export interface FileRoutesById {
   '/procurement': typeof ProcurementRoute
   '/public-site': typeof PublicSiteRoute
   '/register': typeof RegisterRoute
+  '/vacancy': typeof VacancyRoute
   '/buyer-invoice/$id': typeof BuyerInvoiceIdRoute
   '/invoice/$id': typeof InvoiceIdRoute
 }
@@ -179,6 +188,7 @@ export interface FileRouteTypes {
     | '/procurement'
     | '/public-site'
     | '/register'
+    | '/vacancy'
     | '/buyer-invoice/$id'
     | '/invoice/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -197,6 +207,7 @@ export interface FileRouteTypes {
     | '/procurement'
     | '/public-site'
     | '/register'
+    | '/vacancy'
     | '/buyer-invoice/$id'
     | '/invoice/$id'
   id:
@@ -215,6 +226,7 @@ export interface FileRouteTypes {
     | '/procurement'
     | '/public-site'
     | '/register'
+    | '/vacancy'
     | '/buyer-invoice/$id'
     | '/invoice/$id'
   fileRoutesById: FileRoutesById
@@ -234,12 +246,20 @@ export interface RootRouteChildren {
   ProcurementRoute: typeof ProcurementRoute
   PublicSiteRoute: typeof PublicSiteRoute
   RegisterRoute: typeof RegisterRoute
+  VacancyRoute: typeof VacancyRoute
   BuyerInvoiceIdRoute: typeof BuyerInvoiceIdRoute
   InvoiceIdRoute: typeof InvoiceIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/vacancy': {
+      id: '/vacancy'
+      path: '/vacancy'
+      fullPath: '/vacancy'
+      preLoaderRoute: typeof VacancyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/register': {
       id: '/register'
       path: '/register'
@@ -370,6 +390,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProcurementRoute: ProcurementRoute,
   PublicSiteRoute: PublicSiteRoute,
   RegisterRoute: RegisterRoute,
+  VacancyRoute: VacancyRoute,
   BuyerInvoiceIdRoute: BuyerInvoiceIdRoute,
   InvoiceIdRoute: InvoiceIdRoute,
 }
