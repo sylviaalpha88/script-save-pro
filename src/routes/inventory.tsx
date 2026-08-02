@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { canAccess } from "@/lib/access";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,7 +36,7 @@ function InventoryPage() {
   const { profile, loading } = useAuth();
   return (
     <AppShell title="Inventory" subtitle="Track stock, manage inventory and supplies">
-      {!loading && profile && (profile.is_director || (profile.role !== "inventory" && profile.role !== "admin")) ? (
+      {!loading && profile && !canAccess(profile, "procurement") ? (
         <p className="text-destructive font-semibold">You don't have permission to access this page.</p>
       ) : (
         <Tabs defaultValue="stock" className="space-y-6">

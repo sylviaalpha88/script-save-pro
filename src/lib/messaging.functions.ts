@@ -200,3 +200,75 @@ export const sendBulkSms = createServerFn({ method: "POST" })
     const sentCount = rows.filter(r => r.status === "sent").length;
     return { ok: sentCount > 0, sent: sentCount, total: rows.length, provider: providerResponse };
   });
+
+/** Send an SMS to arbitrary phone numbers (e.g. job applicants) using the caller's pharmacy credentials. */
+export const sendSmsToPhones = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { phones: string[]; body: string }) =>
+    z.object({
+      phones: z.array(z.string().min(7).max(20)).min(1).max(300),
+      body: z.string().min(1).max(1000),
+    }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: me } = await context.supabase
+      .from("profiles").select("role, pharmacy_id, is_director, access").eq("id", context.userId).maybeSingle();
+    if (!me) throw new Error("Not signed in");
+    if (!me.pharmacy_id) throw new Error("Your account is not linked to a pharmacy");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: cfg } = await supabaseAdmin
+      .from("sms_settings").select("at_username, at_api_key, sender_id")
+      .eq("pharmacy_id", me.pharmacy_id).maybeSingle();
+    if (!cfg?.at_username || !cfg?.at_api_key) {
+      throw new Error("SMS credentials not configured for this pharmacy.");
+    }
+
+    const normalize = (p: string) => {
+      const digits = p.replace(/[^\d+]/g, "");
+      if (digits.startsWith("+")) return digits;
+      if (digits.startsWith("254")) return "+" + digits;
+      if (digits.startsWith("0")) return "+254" + digits.slice(1);
+      return "+" + digits;
+    };
+    const numbers = Array.from(new Set(data.phones.map(normalize)));
+
+    const form = new URLSearchParams();
+    form.set("username", cfg.at_username);
+    form.set("to", numbers.join(","));
+    form.set("message", data.body);
+    if (cfg.sender_id) form.set("from", cfg.sender_id);
+
+    const endpoint = cfg.at_username === "sandbox"
+      ? "https://api.sandbox.africastalking.com/version1/messaging"
+      : "https://api.africastalking.com/version1/messaging";
+
+    let providerResponse: unknown = null;
+    let ok = false;
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          apiKey: cfg.at_api_key,
+          Accept: "application/json",
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: form.toString(),
+      });
+      providerResponse = await res.json().catch(() => ({ status: res.status }));
+      ok = res.ok;
+    } catch (e) {
+      providerResponse = { error: (e as Error).message };
+    }
+
+    await supabaseAdmin.from("messages").insert(numbers.map(n => ({
+      pharmacy_id: me.pharmacy_id,
+      sender_id: context.userId,
+      recipient_phone: n,
+      body: data.body,
+      status: ok ? "sent" : "failed",
+      provider_response: providerResponse as never,
+    })));
+
+    if (!ok) throw new Error("SMS provider rejected the request");
+    return { sent: numbers.length };
+  });

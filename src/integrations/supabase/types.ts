@@ -187,47 +187,119 @@ export type Database = {
       }
       drugs: {
         Row: {
+          avg_stock: number
+          batch_number: string | null
           buying_price: number
+          category: string | null
+          computed_total: number
           created_at: string
+          department: string | null
+          description: string | null
+          expiry_date: string | null
+          freight_cost: number
           id: string
+          invoice_note_number: string | null
+          lead_time_days: number
+          manufacture_date: string | null
+          max_stock: number
+          measurement_per_item: string | null
           min_stock: number
           name: string
           pharmacy_id: string | null
+          po_number: string | null
+          qty_ordered: number
+          qty_received: number
+          quality_status: string
+          reorder_level: number
           selling_price: number
           selling_price_retail: number
           selling_price_wholesale: number
+          sku: string | null
           stock_quantity: number
+          storage_location: string | null
+          supplier_name: string | null
+          supplier_ref: string | null
+          tax_vat: number
           unit: Database["public"]["Enums"]["drug_unit"]
+          unit_cost: number
           updated_at: string
           wholesale_min_qty: number
         }
         Insert: {
+          avg_stock?: number
+          batch_number?: string | null
           buying_price?: number
+          category?: string | null
+          computed_total?: number
           created_at?: string
+          department?: string | null
+          description?: string | null
+          expiry_date?: string | null
+          freight_cost?: number
           id?: string
+          invoice_note_number?: string | null
+          lead_time_days?: number
+          manufacture_date?: string | null
+          max_stock?: number
+          measurement_per_item?: string | null
           min_stock?: number
           name: string
           pharmacy_id?: string | null
+          po_number?: string | null
+          qty_ordered?: number
+          qty_received?: number
+          quality_status?: string
+          reorder_level?: number
           selling_price?: number
           selling_price_retail?: number
           selling_price_wholesale?: number
+          sku?: string | null
           stock_quantity?: number
+          storage_location?: string | null
+          supplier_name?: string | null
+          supplier_ref?: string | null
+          tax_vat?: number
           unit?: Database["public"]["Enums"]["drug_unit"]
+          unit_cost?: number
           updated_at?: string
           wholesale_min_qty?: number
         }
         Update: {
+          avg_stock?: number
+          batch_number?: string | null
           buying_price?: number
+          category?: string | null
+          computed_total?: number
           created_at?: string
+          department?: string | null
+          description?: string | null
+          expiry_date?: string | null
+          freight_cost?: number
           id?: string
+          invoice_note_number?: string | null
+          lead_time_days?: number
+          manufacture_date?: string | null
+          max_stock?: number
+          measurement_per_item?: string | null
           min_stock?: number
           name?: string
           pharmacy_id?: string | null
+          po_number?: string | null
+          qty_ordered?: number
+          qty_received?: number
+          quality_status?: string
+          reorder_level?: number
           selling_price?: number
           selling_price_retail?: number
           selling_price_wholesale?: number
+          sku?: string | null
           stock_quantity?: number
+          storage_location?: string | null
+          supplier_name?: string | null
+          supplier_ref?: string | null
+          tax_vat?: number
           unit?: Database["public"]["Enums"]["drug_unit"]
+          unit_cost?: number
           updated_at?: string
           wholesale_min_qty?: number
         }
@@ -409,6 +481,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          access: string[]
           can_edit_site: boolean
           created_at: string
           id: string
@@ -418,6 +491,7 @@ export type Database = {
           username: string
         }
         Insert: {
+          access?: string[]
           can_edit_site?: boolean
           created_at?: string
           id: string
@@ -427,6 +501,7 @@ export type Database = {
           username: string
         }
         Update: {
+          access?: string[]
           can_edit_site?: boolean
           created_at?: string
           id?: string
@@ -624,6 +699,101 @@ export type Database = {
             columns: ["pharmacy_id"]
             isOneToOne: false
             referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vacancies: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          is_open: boolean
+          pharmacy_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          is_open?: boolean
+          pharmacy_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          is_open?: boolean
+          pharmacy_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vacancies_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vacancy_applications: {
+        Row: {
+          applicant_name: string
+          certificate_paths: string[]
+          created_at: string
+          cv_path: string | null
+          email: string | null
+          id: string
+          letter_path: string | null
+          pharmacy_id: string | null
+          phone: string | null
+          vacancy_id: string
+        }
+        Insert: {
+          applicant_name: string
+          certificate_paths?: string[]
+          created_at?: string
+          cv_path?: string | null
+          email?: string | null
+          id?: string
+          letter_path?: string | null
+          pharmacy_id?: string | null
+          phone?: string | null
+          vacancy_id: string
+        }
+        Update: {
+          applicant_name?: string
+          certificate_paths?: string[]
+          created_at?: string
+          cv_path?: string | null
+          email?: string | null
+          id?: string
+          letter_path?: string | null
+          pharmacy_id?: string | null
+          phone?: string | null
+          vacancy_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vacancy_applications_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vacancy_applications_vacancy_id_fkey"
+            columns: ["vacancy_id"]
+            isOneToOne: false
+            referencedRelation: "vacancies"
             referencedColumns: ["id"]
           },
         ]
