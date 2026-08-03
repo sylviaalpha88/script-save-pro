@@ -13,8 +13,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { createStaffUser, deleteStaffUser } from "@/lib/admin.functions";
-import { Trash2, Users, DollarSign, ShoppingCart, TrendingUp } from "lucide-react";
+import { createStaffUser, deleteStaffUser, setStaffPassword } from "@/lib/admin.functions";
+import { Trash2, Users, DollarSign, ShoppingCart, TrendingUp, Eye, EyeOff } from "lucide-react";
+
 
 
 
@@ -332,14 +333,19 @@ function UsersPanel() {
         <CardHeader><CardTitle>All Users</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <Input placeholder="Search users by name or role…" value={search} onChange={e => setSearch(e.target.value)} />
+          <p className="text-xs text-muted-foreground">
+            Passwords are stored one-way encrypted, so an existing password can never be displayed.
+            Type a new password beside a user and click Save to change it.
+          </p>
           <Table>
-            <TableHeader><TableRow><TableHead>Username</TableHead><TableHead>Role</TableHead><TableHead></TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>Username</TableHead><TableHead>Role</TableHead><TableHead>Password</TableHead><TableHead></TableHead></TableRow></TableHeader>
             <TableBody>
-              {filteredUsers.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground text-sm">No users match your search.</TableCell></TableRow>}
+              {filteredUsers.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground text-sm">No users match your search.</TableCell></TableRow>}
               {filteredUsers.map(u => (
                 <TableRow key={u.id}>
                   <TableCell className="font-medium">{u.username}</TableCell>
                   <TableCell className="capitalize">{u.role}</TableCell>
+                  <TableCell><PasswordCell userId={u.id} username={u.username} /></TableCell>
                   <TableCell className="text-right">
                     {u.role !== "admin" && (
                       <Button size="sm" variant="ghost" onClick={async () => {
@@ -360,6 +366,42 @@ function UsersPanel() {
     </div>
   );
 }
+
+function PasswordCell({ userId, username }: { userId: string; username: string }) {
+  const setPw = useServerFn(setStaffPassword);
+  const [value, setValue] = useState("");
+  const [show, setShow] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const save = async () => {
+    if (value.length < 6) { toast.error("Password must be at least 6 characters"); return; }
+    setBusy(true);
+    try {
+      await setPw({ data: { userId, password: value } });
+      toast.success(`Password changed for ${username}`);
+      setValue(""); setShow(false);
+    } catch (e) { toast.error((e as Error).message); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div className="flex items-center gap-1">
+      <Input
+        className="h-8 w-36"
+        type={show ? "text" : "password"}
+        autoComplete="new-password"
+        placeholder="New password"
+        value={value}
+        onChange={e => setValue(e.target.value)}
+      />
+      <Button size="sm" variant="ghost" type="button" onClick={() => setShow(s => !s)} title={show ? "Hide" : "Show"}>
+        {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      </Button>
+      <Button size="sm" variant="outline" disabled={busy || !value} onClick={save}>Save</Button>
+    </div>
+  );
+}
+
 
 type ReportRow = { id: string; report_date: string; cash: number; mpesa: number; total: number; notes: string | null; created_at: string };
 

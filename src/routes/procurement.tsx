@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { canAccess } from "@/lib/access";
 import { AppShell } from "@/components/AppShell";
+import { SignOffBlock } from "@/components/SignOff";
+import { printElement } from "@/lib/print";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,18 +13,19 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Package, ArrowLeft, Search } from "lucide-react";
+import { Plus, Package, ArrowLeft, Search, Printer, ClipboardList, Inbox } from "lucide-react";
 
 export const Route = createFileRoute("/procurement")({
   component: ProcurementPage,
   head: () => ({
     meta: [
-      { title: "Procurement · Store & New Inventory" },
-      { name: "description", content: "See goods on store and create new inventory items with supplier, costing, batch and storage details." },
-      { property: "og:title", content: "Procurement · Store & New Inventory" },
-      { property: "og:description", content: "See goods on store and create new inventory items with supplier, costing, batch and storage details." },
+      { title: "Procurement · Store, Stock Order & New Inventory" },
+      { name: "description", content: "See goods on store, raise stock orders for low items and create new inventory with supplier, costing, batch and storage details." },
+      { property: "og:title", content: "Procurement · Store, Stock Order & New Inventory" },
+      { property: "og:description", content: "See goods on store, raise stock orders for low items and create new inventory with supplier, costing, batch and storage details." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -39,27 +42,233 @@ type StoreRow = {
 
 function ProcurementPage() {
   const { profile, loading } = useAuth();
-  const [view, setView] = useState<"store" | "new">("store");
+  const [view, setView] = useState<"main" | "new">("main");
 
   const denied = !loading && profile && !canAccess(profile, "procurement");
 
   return (
-    <AppShell title="Procurement" subtitle="Goods on store, suppliers and new inventory items">
+    <AppShell title="Procurement" subtitle="Goods on store, stock orders, suppliers and new inventory items">
       {denied ? (
         <p className="text-destructive font-semibold">You don't have permission to access this page.</p>
-      ) : view === "store" ? (
-        <StoreView onAddNew={() => setView("new")} />
+      ) : view === "main" ? (
+        <Tabs defaultValue="store" className="space-y-4">
+          <TabsList className="flex-wrap h-auto">
+            <TabsTrigger value="store"><Package className="h-4 w-4 mr-1" />Store</TabsTrigger>
+            <TabsTrigger value="stock_order"><ClipboardList className="h-4 w-4 mr-1" />Stock Order</TabsTrigger>
+            <TabsTrigger value="requests"><Inbox className="h-4 w-4 mr-1" />Pharmacy Requests</TabsTrigger>
+          </TabsList>
+          <TabsContent value="store"><StoreView onAddNew={() => setView("new")} /></TabsContent>
+          <TabsContent value="stock_order"><StockOrderPanel /></TabsContent>
+          <TabsContent value="requests"><PharmacyRequestsPanel /></TabsContent>
+        </Tabs>
       ) : (
         <div className="space-y-4">
-          <Button variant="outline" onClick={() => setView("store")}>
+          <Button variant="outline" onClick={() => setView("main")}>
             <ArrowLeft className="h-4 w-4 mr-1" /> Back to store
           </Button>
-          <NewInventoryForm onSaved={() => setView("store")} />
+          <NewInventoryForm onSaved={() => setView("main")} />
         </div>
       )}
     </AppShell>
   );
 }
+
+// =============== STOCK ORDER (auto reorder list) ===============
+
+type ReorderRow = StoreRow & { avg_stock: number };
+
+function StockOrderPanel() {
+  const [rows, setRows] = useState<ReorderRow[]>([]);
+  const printRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    supabase.from("drugs")
+      .select("id, name, sku, unit, category, department, measurement_per_item, stock_quantity, min_stock, avg_stock, reorder_level, max_stock, batch_number, expiry_date, storage_location, quality_status, supplier_name, unit_cost, computed_total")
+      .order("name")
+      .then(({ data, error }) => {
+        if (error) { toast.error(error.message); return; }
+        setRows((data as ReorderRow[]) ?? []);
+      });
+  }, []);
+
+  const list = useMemo(() => rows
+    .map(r => {
+      const level: "critical" | "low" | null =
+        r.stock_quantity < r.min_stock ? "critical"
+          : r.stock_quantity < r.avg_stock ? "low" : null;
+      return { ...r, level, order_qty: Math.max(0, Number(r.max_stock) - Number(r.stock_quantity)) };
+    })
+    .filter(r => r.level !== null), [rows]);
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-4 flex-wrap">
+        <CardTitle className="flex items-center gap-2"><ClipboardList className="h-5 w-5" />Stock Order ({list.length})</CardTitle>
+        <Button variant="outline" onClick={() => printElement(printRef.current, "Stock Order")}>
+          <Printer className="h-4 w-4 mr-1" />Print / Download
+        </Button>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-wrap gap-4 text-xs mb-3">
+          <span className="inline-flex items-center gap-2"><span className="h-3 w-6 rounded bg-destructive/20 border border-destructive" />Below minimum stock</span>
+          <span className="inline-flex items-center gap-2"><span className="h-3 w-6 rounded bg-blue-100 border border-blue-400" />Between minimum and average stock</span>
+        </div>
+        <div ref={printRef}>
+          <h1>Stock Order Requisition</h1>
+          <div className="sub text-xs text-muted-foreground mb-3">
+            Generated {new Date().toLocaleString()} · Quantity to order = Maximum stock − Quantity remaining
+          </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>SKU</TableHead>
+                  <TableHead>Item</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Measure</TableHead>
+                  <TableHead>Remaining</TableHead>
+                  <TableHead>Min</TableHead>
+                  <TableHead>Avg</TableHead>
+                  <TableHead>Max</TableHead>
+                  <TableHead>Qty to Order</TableHead>
+                  <TableHead>Supplier</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {list.length === 0 && (
+                  <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground">Every item is above its average stock — nothing to order.</TableCell></TableRow>
+                )}
+                {list.map(r => (
+                  <TableRow key={r.id} className={r.level === "critical" ? "bg-destructive/5" : "bg-blue-50/60"}>
+                    <TableCell className="text-xs">{r.sku || "—"}</TableCell>
+                    <TableCell className={`font-medium ${r.level === "critical" ? "low text-destructive" : "mid text-blue-700"}`}>{r.name}</TableCell>
+                    <TableCell>{r.category || "—"}</TableCell>
+                    <TableCell>{r.department || "—"}</TableCell>
+                    <TableCell>{r.measurement_per_item || "—"}</TableCell>
+                    <TableCell className={r.level === "critical" ? "low text-destructive font-semibold" : "mid text-blue-700 font-semibold"}>{r.stock_quantity}</TableCell>
+                    <TableCell>{r.min_stock}</TableCell>
+                    <TableCell>{r.avg_stock}</TableCell>
+                    <TableCell>{r.max_stock}</TableCell>
+                    <TableCell className="font-bold">{r.order_qty}</TableCell>
+                    <TableCell>{r.supplier_name || "—"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <SignOffBlock />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// =============== PHARMACY STOCK REQUESTS ===============
+
+type SOrder = {
+  id: string; status: string; note: string | null; created_at: string;
+  requested_by_name: string | null;
+};
+type SOItem = {
+  id: string; order_id: string; drug_id: string; drug_name: string;
+  quantity: number; approved_qty: number | null; status: string; reject_reason: string | null;
+};
+
+function PharmacyRequestsPanel() {
+  const [orders, setOrders] = useState<SOrder[]>([]);
+  const [items, setItems] = useState<Record<string, SOItem[]>>({});
+  const [busy, setBusy] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const load = async () => {
+    const { data: os, error } = await supabase.from("stock_orders")
+      .select("id, status, note, created_at, requested_by_name")
+      .order("created_at", { ascending: false }).limit(100);
+    if (error) { toast.error(error.message); return; }
+    setOrders((os as SOrder[]) ?? []);
+    const ids = (os ?? []).map(o => o.id);
+    if (ids.length) {
+      const { data: its } = await supabase.from("stock_order_items")
+        .select("id, order_id, drug_id, drug_name, quantity, approved_qty, status, reject_reason")
+        .in("order_id", ids);
+      const grouped: Record<string, SOItem[]> = {};
+      ((its as SOItem[]) ?? []).forEach(it => { (grouped[it.order_id] ||= []).push(it); });
+      setItems(grouped);
+    } else setItems({});
+  };
+  useEffect(() => { load(); }, []);
+
+  const approve = async (id: string) => {
+    setBusy(true);
+    const { error } = await supabase.rpc("approve_stock_order", { _order_id: id });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Approved · stock moved to the pharmacy store");
+    load();
+  };
+
+  const reject = async (id: string) => {
+    const reason = prompt("Reason for rejecting this stock order?") ?? "";
+    const { error } = await supabase.from("stock_orders")
+      .update({ status: "rejected", note: reason || null }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    await supabase.from("stock_order_items").update({ status: "rejected", reject_reason: reason || null }).eq("order_id", id);
+    toast.success("Rejected");
+    load();
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-4 flex-wrap">
+        <CardTitle className="flex items-center gap-2"><Inbox className="h-5 w-5" />Stock orders from Pharmacy</CardTitle>
+        <Button variant="outline" onClick={() => printElement(printRef.current, "Pharmacy Stock Orders")}>
+          <Printer className="h-4 w-4 mr-1" />Print / Download
+        </Button>
+      </CardHeader>
+      <CardContent>
+        <div ref={printRef} className="space-y-4">
+          <h1>Pharmacy Stock Orders</h1>
+          {orders.length === 0 && <p className="text-muted-foreground text-center py-6">No stock orders from the pharmacy yet.</p>}
+          {orders.map(o => (
+            <div key={o.id} className="border rounded-md p-3 space-y-2">
+              <div className="flex flex-wrap justify-between items-center gap-2">
+                <div>
+                  <div className="font-semibold">#{o.id.slice(0, 8)} · {o.requested_by_name ?? "Pharmacy"}</div>
+                  <div className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleString()}{o.note ? ` · ${o.note}` : ""}</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={o.status === "approved" ? "default" : o.status === "rejected" ? "destructive" : "outline"}>{o.status}</Badge>
+                  {o.status === "pending" && (
+                    <>
+                      <Button size="sm" disabled={busy} onClick={() => approve(o.id)}>Approve</Button>
+                      <Button size="sm" variant="outline" onClick={() => reject(o.id)}>Reject</Button>
+                    </>
+                  )}
+                </div>
+              </div>
+              <Table>
+                <TableHeader><TableRow><TableHead>Item</TableHead><TableHead className="text-right">Requested</TableHead><TableHead className="text-right">Approved</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {(items[o.id] ?? []).map(it => (
+                    <TableRow key={it.id}>
+                      <TableCell className="font-medium">{it.drug_name}</TableCell>
+                      <TableCell className="text-right">{it.quantity}</TableCell>
+                      <TableCell className="text-right">{it.approved_qty ?? "—"}</TableCell>
+                      <TableCell className="text-xs capitalize">{it.status}{it.reject_reason ? `: ${it.reject_reason}` : ""}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ))}
+          <SignOffBlock />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 function StoreView({ onAddNew }: { onAddNew: () => void }) {
   const [rows, setRows] = useState<StoreRow[]>([]);
