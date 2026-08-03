@@ -1,8 +1,10 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/lib/auth-context";
 import { AppShell } from "@/components/AppShell";
+import { SignOffBlock } from "@/components/SignOff";
+import { printElement } from "@/lib/print";
 
 import { supabase } from "@/integrations/supabase/client";
 import { registerBuyer } from "@/lib/buyer.functions";
@@ -11,16 +13,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Trash2, FileText } from "lucide-react";
+import { Plus, Trash2, FileText, Printer, ClipboardList } from "lucide-react";
 
 export const Route = createFileRoute("/pharmacy")({
   component: PharmacyPage,
 });
 
-type Drug = { id: string; name: string; unit: string; selling_price: number; selling_price_retail: number; selling_price_wholesale: number; wholesale_min_qty: number; stock_quantity: number };
+type Drug = {
+  id: string; name: string; unit: string; selling_price: number;
+  selling_price_retail: number; selling_price_wholesale: number;
+  wholesale_min_qty: number; stock_quantity: number;
+  category: string | null; department: string | null; measurement_per_item: string | null;
+};
 type LineItem = { drug_id: string; drug_name: string; unit_price: number; quantity: number };
 
 function PharmacyPage() {
@@ -40,6 +49,7 @@ function PharmacyPage() {
             <TabsTrigger value="retail">Retail</TabsTrigger>
             <TabsTrigger value="wholesale">Wholesale</TabsTrigger>
             <TabsTrigger value="orders_review">Order Review</TabsTrigger>
+            <TabsTrigger value="make_order">Make Order</TabsTrigger>
           </TabsList>
           <TabsContent value="buyer_orders"><BuyersPanel /></TabsContent>
           <TabsContent value="today"><BuyerDispensedPanel mode="today" /></TabsContent>
@@ -48,6 +58,7 @@ function PharmacyPage() {
           <TabsContent value="retail"><RetailForm /></TabsContent>
           <TabsContent value="wholesale"><WholesaleForm /></TabsContent>
           <TabsContent value="orders_review"><BuyerOrdersPanel /></TabsContent>
+          <TabsContent value="make_order"><MakeOrderPanel /></TabsContent>
         </Tabs>
 
 
@@ -56,14 +67,25 @@ function PharmacyPage() {
   );
 }
 
+const DRUG_COLS = "id,name,unit,selling_price,selling_price_retail,selling_price_wholesale,wholesale_min_qty,stock_quantity,category,department,measurement_per_item";
+
+/** Drugs with the quantity actually held in the PHARMACY store (not the procurement store). */
 function useDrugs() {
   const [drugs, setDrugs] = useState<Drug[]>([]);
   useEffect(() => {
-    supabase.from("drugs").select("id,name,unit,selling_price,selling_price_retail,selling_price_wholesale,wholesale_min_qty,stock_quantity").order("name")
-      .then(({ data }) => setDrugs((data as Drug[]) ?? []));
+    (async () => {
+      const [{ data: ds }, { data: ps }] = await Promise.all([
+        supabase.from("drugs").select(DRUG_COLS).order("name"),
+        supabase.from("pharmacy_stock").select("drug_id, quantity"),
+      ]);
+      const held = new Map<string, number>();
+      ((ps as { drug_id: string; quantity: number }[]) ?? []).forEach(p => held.set(p.drug_id, Number(p.quantity)));
+      setDrugs(((ds as Drug[]) ?? []).map(d => ({ ...d, stock_quantity: held.get(d.id) ?? 0 })));
+    })();
   }, []);
   return drugs;
 }
+
 
 type SaleMode = "retail" | "wholesale";
 
