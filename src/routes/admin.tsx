@@ -13,8 +13,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { createStaffUser, deleteStaffUser } from "@/lib/admin.functions";
-import { Trash2, Users, DollarSign, ShoppingCart, TrendingUp } from "lucide-react";
+import { createStaffUser, deleteStaffUser, setStaffPassword } from "@/lib/admin.functions";
+import { Trash2, Users, DollarSign, ShoppingCart, TrendingUp, Eye, EyeOff } from "lucide-react";
+
 
 
 
