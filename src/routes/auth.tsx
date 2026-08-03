@@ -64,15 +64,16 @@ function AuthPage() {
           <p className="text-sm text-muted-foreground">{branding.tagline}</p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={onSubmit} className="space-y-4">
+          <form onSubmit={onSubmit} className="space-y-4" autoComplete="off">
             <div className="space-y-2">
               <Label htmlFor="username">Username or email</Label>
-              <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} required autoFocus />
+              <Input id="username" name="lemsa-user" value={username} onChange={(e) => setUsername(e.target.value)} required autoFocus autoComplete="off" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <Input id="password" name="lemsa-pass" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" />
             </div>
+
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Signing in…" : "Sign in"}
             </Button>
