@@ -918,3 +918,218 @@ function PaymentReceive({ total, onPay }: { total: number; onPay: (method: strin
     </div>
   );
 }
+
+// =============== MAKE ORDER (pharmacy -> procurement) ===============
+
+type ProcDrug = Drug & { proc_stock: number };
+type MyOrder = { id: string; status: string; note: string | null; created_at: string };
+type MyOrderItem = { id: string; order_id: string; drug_name: string; quantity: number; approved_qty: number | null; status: string; reject_reason: string | null };
+
+function MakeOrderPanel() {
+  const { profile } = useAuth();
+  const [all, setAll] = useState<ProcDrug[]>([]);
+  const [store, setStore] = useState<{ drug_id: string; quantity: number; drugs: { name: string; unit: string } | null }[]>([]);
+  const [orders, setOrders] = useState<MyOrder[]>([]);
+  const [oItems, setOItems] = useState<Record<string, MyOrderItem[]>>({});
+  const [q, setQ] = useState("");
+  const [cat, setCat] = useState("");
+  const [dept, setDept] = useState("");
+  const [meas, setMeas] = useState("");
+  const [lines, setLines] = useState<{ drug_id: string; drug_name: string; quantity: number }[]>([]);
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const load = async () => {
+    const { data: ds } = await supabase.from("drugs").select(DRUG_COLS).order("name");
+    setAll(((ds as Drug[]) ?? []).map(d => ({ ...d, proc_stock: Number(d.stock_quantity) })));
+    const { data: ps } = await supabase.from("pharmacy_stock").select("drug_id, quantity, drugs(name, unit)").order("quantity", { ascending: false });
+    setStore((ps as any) ?? []);
+    const { data: os } = await supabase.from("stock_orders")
+      .select("id, status, note, created_at").order("created_at", { ascending: false }).limit(50);
+    setOrders((os as MyOrder[]) ?? []);
+    const ids = (os ?? []).map((o: any) => o.id);
+    if (ids.length) {
+      const { data: its } = await supabase.from("stock_order_items")
+        .select("id, order_id, drug_name, quantity, approved_qty, status, reject_reason").in("order_id", ids);
+      const g: Record<string, MyOrderItem[]> = {};
+      ((its as MyOrderItem[]) ?? []).forEach(it => { (g[it.order_id] ||= []).push(it); });
+      setOItems(g);
+    } else setOItems({});
+  };
+  useEffect(() => { load(); }, []);
+
+  const uniq = (vals: (string | null)[]) => [...new Set(vals.filter(Boolean) as string[])].sort();
+  const categories = useMemo(() => uniq(all.map(d => d.category)), [all]);
+  const departments = useMemo(() => uniq(all.map(d => d.department)), [all]);
+  const measures = useMemo(() => uniq(all.map(d => d.measurement_per_item)), [all]);
+
+  const matches = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    return all.filter(d =>
+      (!s || d.name.toLowerCase().includes(s)) &&
+      (!cat || d.category === cat) &&
+      (!dept || d.department === dept) &&
+      (!meas || d.measurement_per_item === meas)
+    ).slice(0, 30);
+  }, [all, q, cat, dept, meas]);
+
+  const addLine = (d: ProcDrug) => {
+    if (lines.some(l => l.drug_id === d.id)) { toast.error("Already on the order"); return; }
+    setLines(prev => [...prev, { drug_id: d.id, drug_name: d.name, quantity: 1 }]);
+  };
+
+  const submit = async () => {
+    if (!profile?.pharmacy_id) { toast.error("Your account is not linked to a pharmacy"); return; }
+    if (lines.length === 0) { toast.error("Add at least one item"); return; }
+    setBusy(true);
+    try {
+      const { data: order, error } = await supabase.from("stock_orders").insert({
+        pharmacy_id: profile.pharmacy_id, status: "pending", note: note || null,
+        requested_by: profile.id, requested_by_name: profile.username,
+      }).select("id").single();
+      if (error) throw error;
+      const { error: iErr } = await supabase.from("stock_order_items").insert(
+        lines.map(l => ({
+          order_id: order.id, pharmacy_id: profile.pharmacy_id!,
+          drug_id: l.drug_id, drug_name: l.drug_name,
+          quantity: Math.max(1, l.quantity), status: "pending",
+        }))
+      );
+      if (iErr) throw iErr;
+      toast.success("Order saved · waiting for approval at Procurement");
+      setLines([]); setNote("");
+      load();
+    } catch (e) { toast.error((e as Error).message); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div className="grid lg:grid-cols-2 gap-6">
+      <Card>
+        <CardHeader><CardTitle className="flex items-center gap-2"><ClipboardList className="h-5 w-5" />Make Order to Procurement</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2"><Label className="text-xs">Item name</Label><Input value={q} onChange={e => setQ(e.target.value)} placeholder="Start typing an item name…" /></div>
+            <div>
+              <Label className="text-xs">Category</Label>
+              <select className="w-full h-9 rounded-md border bg-background px-2 text-sm" value={cat} onChange={e => setCat(e.target.value)}>
+                <option value="">All categories</option>
+                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <Label className="text-xs">Department</Label>
+              <select className="w-full h-9 rounded-md border bg-background px-2 text-sm" value={dept} onChange={e => setDept(e.target.value)}>
+                <option value="">All departments</option>
+                {departments.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="sm:col-span-2">
+              <Label className="text-xs">Measurement per item</Label>
+              <select className="w-full h-9 rounded-md border bg-background px-2 text-sm" value={meas} onChange={e => setMeas(e.target.value)}>
+                <option value="">Any measurement (e.g. 500 gm, 1 L)</option>
+                {measures.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="border rounded-md max-h-64 overflow-auto">
+            <Table>
+              <TableHeader><TableRow><TableHead>Item</TableHead><TableHead>Category</TableHead><TableHead>Dept</TableHead><TableHead>Measure</TableHead><TableHead className="text-right">In store</TableHead><TableHead></TableHead></TableRow></TableHeader>
+              <TableBody>
+                {matches.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No matching items</TableCell></TableRow>}
+                {matches.map(d => (
+                  <TableRow key={d.id}>
+                    <TableCell className="font-medium">{d.name} <span className="text-xs text-muted-foreground">({d.unit})</span></TableCell>
+                    <TableCell className="text-xs">{d.category ?? "—"}</TableCell>
+                    <TableCell className="text-xs">{d.department ?? "—"}</TableCell>
+                    <TableCell className="text-xs">{d.measurement_per_item ?? "—"}</TableCell>
+                    <TableCell className="text-right">{d.proc_stock}</TableCell>
+                    <TableCell className="text-right"><Button size="sm" variant="secondary" onClick={() => addLine(d)}><Plus className="h-4 w-4" /></Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="border rounded-md">
+            <Table>
+              <TableHeader><TableRow><TableHead>On this order</TableHead><TableHead className="w-28">Qty</TableHead><TableHead></TableHead></TableRow></TableHeader>
+              <TableBody>
+                {lines.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">No items added</TableCell></TableRow>}
+                {lines.map((l, i) => (
+                  <TableRow key={l.drug_id}>
+                    <TableCell className="font-medium">{l.drug_name}</TableCell>
+                    <TableCell>
+                      <Input type="number" min="1" className="h-8" value={l.quantity}
+                        onChange={e => setLines(prev => prev.map((x, ix) => ix === i ? { ...x, quantity: Number(e.target.value) || 1 } : x))} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="ghost" onClick={() => setLines(prev => prev.filter((_, ix) => ix !== i))}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div><Label className="text-xs">Note (optional)</Label><Textarea rows={2} value={note} onChange={e => setNote(e.target.value)} /></div>
+          <Button className="w-full" disabled={busy} onClick={submit}>{busy ? "Saving…" : "Save order (await approval at Procurement)"}</Button>
+        </CardContent>
+      </Card>
+
+      <div className="space-y-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-3 flex-wrap">
+            <CardTitle>Pharmacy Store</CardTitle>
+            <Button variant="outline" size="sm" onClick={() => printElement(printRef.current, "Pharmacy Store & Orders")}>
+              <Printer className="h-4 w-4 mr-1" />Print / Download
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div ref={printRef}>
+              <h1>Pharmacy Store &amp; Stock Orders</h1>
+              <Table>
+                <TableHeader><TableRow><TableHead>Item</TableHead><TableHead className="text-right">Quantity held</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {store.length === 0 && <TableRow><TableCell colSpan={2} className="text-center text-muted-foreground">The pharmacy store is empty. Make an order to Procurement.</TableCell></TableRow>}
+                  {store.map(s => (
+                    <TableRow key={s.drug_id}>
+                      <TableCell className="font-medium">{s.drugs?.name ?? s.drug_id}</TableCell>
+                      <TableCell className={`text-right font-semibold ${Number(s.quantity) === 0 ? "text-destructive" : ""}`}>{s.quantity}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <SignOffBlock />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>My Stock Orders</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            {orders.length === 0 && <p className="text-muted-foreground text-center py-4">No stock orders raised yet.</p>}
+            {orders.map(o => (
+              <div key={o.id} className="border rounded-md p-3 space-y-2">
+                <div className="flex justify-between items-center gap-2">
+                  <div className="text-sm font-medium">#{o.id.slice(0, 8)} <span className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleString()}</span></div>
+                  <Badge variant={o.status === "approved" ? "default" : o.status === "rejected" ? "destructive" : "outline"}>{o.status}</Badge>
+                </div>
+                <div className="text-xs space-y-1">
+                  {(oItems[o.id] ?? []).map(it => (
+                    <div key={it.id} className="flex justify-between">
+                      <span>{it.drug_name}</span>
+                      <span className="text-muted-foreground">req {it.quantity}{it.approved_qty != null ? ` · approved ${it.approved_qty}` : ""}{it.reject_reason ? ` · ${it.reject_reason}` : ""}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
