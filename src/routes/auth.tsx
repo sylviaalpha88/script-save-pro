@@ -41,7 +41,10 @@ function AuthPage() {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       await refresh();
+      // Never keep the credentials around once we are in.
+      setUsername(""); setPassword("");
       toast.success("Welcome to LEMSA");
+
     } catch (err) {
       toast.error((err as Error).message || "Invalid credentials");
     } finally {
