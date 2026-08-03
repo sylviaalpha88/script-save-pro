@@ -169,7 +169,9 @@ function ReportRow({ r, onChanged }: { r: Report; onChanged: () => void }) {
         {editing ? <Input type="number" className="h-7 w-24 ml-auto" value={mpesa} onChange={e => setMpesa(e.target.value)} /> : `KSh ${Number(r.mpesa).toFixed(2)}`}
       </TableCell>
       <TableCell className="text-right font-medium">KSh {(editing ? total : Number(r.total)).toFixed(2)}</TableCell>
+      <TableCell className="text-sm text-muted-foreground">{r.notes ?? "—"}</TableCell>
       <TableCell className="text-right">
+
         {locked ? (
           <span className="text-xs text-muted-foreground inline-flex items-center gap-1"><Lock className="h-3 w-3"/> locked</span>
         ) : editing ? (
