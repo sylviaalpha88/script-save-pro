@@ -40,6 +40,8 @@ function AccountantPage() {
   const [notes, setNotes] = useState("");
   const [reports, setReports] = useState<Report[]>([]);
   const [busy, setBusy] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
+
 
   // Date range filter
   const [from, setFrom] = useState(todayISO());
