@@ -320,3 +320,35 @@ export const updateStaffAccess = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/**
+ * Admin sets a new password for one of their own staff users.
+ * Passwords are stored one-way encrypted by the auth system, so an existing
+ * password can never be read back — it can only be replaced.
+ */
+export const setStaffPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { userId: string; password: string }) =>
+    z.object({
+      userId: z.string().uuid(),
+      password: z.string().min(6).max(100),
+    }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: me } = await context.supabase
+      .from("profiles").select("role, pharmacy_id, is_director").eq("id", context.userId).maybeSingle();
+    if (!me || me.role !== "admin") throw new Error("Admin only");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (!me.is_director) {
+      const { data: target } = await supabaseAdmin
+        .from("profiles").select("pharmacy_id, role").eq("id", data.userId).maybeSingle();
+      if (!target || target.pharmacy_id !== me.pharmacy_id || target.role === "admin") {
+        throw new Error("Forbidden");
+      }
+    }
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+      password: data.password,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
