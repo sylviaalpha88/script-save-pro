@@ -479,6 +479,48 @@ export type Database = {
         }
         Relationships: []
       }
+      pharmacy_stock: {
+        Row: {
+          created_at: string
+          drug_id: string
+          id: string
+          pharmacy_id: string
+          quantity: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          drug_id: string
+          id?: string
+          pharmacy_id: string
+          quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          drug_id?: string
+          id?: string
+          pharmacy_id?: string
+          quantity?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pharmacy_stock_drug_id_fkey"
+            columns: ["drug_id"]
+            isOneToOne: false
+            referencedRelation: "drugs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pharmacy_stock_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           access: string[]
@@ -703,6 +745,114 @@ export type Database = {
           },
         ]
       }
+      stock_order_items: {
+        Row: {
+          approved_qty: number | null
+          created_at: string
+          drug_id: string
+          drug_name: string
+          id: string
+          order_id: string
+          pharmacy_id: string
+          quantity: number
+          reject_reason: string | null
+          status: string
+        }
+        Insert: {
+          approved_qty?: number | null
+          created_at?: string
+          drug_id: string
+          drug_name: string
+          id?: string
+          order_id: string
+          pharmacy_id: string
+          quantity: number
+          reject_reason?: string | null
+          status?: string
+        }
+        Update: {
+          approved_qty?: number | null
+          created_at?: string
+          drug_id?: string
+          drug_name?: string
+          id?: string
+          order_id?: string
+          pharmacy_id?: string
+          quantity?: number
+          reject_reason?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_order_items_drug_id_fkey"
+            columns: ["drug_id"]
+            isOneToOne: false
+            referencedRelation: "drugs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stock_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_order_items_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_orders: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          note: string | null
+          pharmacy_id: string
+          requested_by: string | null
+          requested_by_name: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          note?: string | null
+          pharmacy_id: string
+          requested_by?: string | null
+          requested_by_name?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          note?: string | null
+          pharmacy_id?: string
+          requested_by?: string | null
+          requested_by_name?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_orders_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vacancies: {
         Row: {
           created_at: string
@@ -859,6 +1009,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_stock_order: { Args: { _order_id: string }; Returns: undefined }
       can_edit_public_site: { Args: { _uid: string }; Returns: boolean }
       current_pharmacy_id: { Args: never; Returns: string }
       current_role_name: {
