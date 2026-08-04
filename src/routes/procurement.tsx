@@ -479,8 +479,8 @@ function NewInventoryForm({ onSaved }: { onSaved: () => void }) {
             <Input readOnly value={computedTotal.toFixed(2)} className="bg-muted font-semibold" />
           </div>
           <div><Label>Buying price per {f.unit}</Label><Input type="number" step="0.01" value={f.buying_price} onChange={e => set("buying_price", e.target.value)} /></div>
-          <div><Label>Retail selling price</Label><Input type="number" step="0.01" value={f.selling_price_retail} onChange={e => set("selling_price_retail", e.target.value)} /></div>
-          <div><Label>Wholesale selling price</Label><Input type="number" step="0.01" value={f.selling_price_wholesale} onChange={e => set("selling_price_wholesale", e.target.value)} /></div>
+          <div><Label>Retail selling price (from service)</Label><Input readOnly value={svc ? Number(svc.selling_price_retail).toFixed(2) : ""} className="bg-muted font-semibold" placeholder="pick a service name first" /></div>
+          <div><Label>Wholesale selling price (from service)</Label><Input readOnly value={svc ? Number(svc.selling_price_wholesale).toFixed(2) : ""} className="bg-muted font-semibold" placeholder="pick a service name first" /></div>
           <div><Label>Min qty to qualify as wholesale</Label><Input type="number" value={f.wholesale_min_qty} onChange={e => set("wholesale_min_qty", e.target.value)} /></div>
         </CardContent>
       </Card>
