@@ -175,10 +175,12 @@ type SOItem = {
   id: string; order_id: string; drug_id: string; drug_name: string;
   quantity: number; approved_qty: number | null; status: string; reject_reason: string | null;
 };
+type DrugMeta = { id: string; category: string | null; department: string | null; manufacture_date: string | null; expiry_date: string | null };
 
 function PharmacyRequestsPanel() {
   const [orders, setOrders] = useState<SOrder[]>([]);
   const [items, setItems] = useState<Record<string, SOItem[]>>({});
+  const [meta, setMeta] = useState<Record<string, DrugMeta>>({});
   const [busy, setBusy] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -196,7 +198,15 @@ function PharmacyRequestsPanel() {
       const grouped: Record<string, SOItem[]> = {};
       ((its as SOItem[]) ?? []).forEach(it => { (grouped[it.order_id] ||= []).push(it); });
       setItems(grouped);
-    } else setItems({});
+      const drugIds = Array.from(new Set(((its as SOItem[]) ?? []).map(i => i.drug_id)));
+      if (drugIds.length) {
+        const { data: ds } = await supabase.from("drugs")
+          .select("id, category, department, manufacture_date, expiry_date").in("id", drugIds);
+        const m: Record<string, DrugMeta> = {};
+        ((ds as DrugMeta[]) ?? []).forEach(d => { m[d.id] = d; });
+        setMeta(m);
+      } else setMeta({});
+    } else { setItems({}); setMeta({}); }
   };
   useEffect(() => { load(); }, []);
 
@@ -249,21 +259,34 @@ function PharmacyRequestsPanel() {
                 </div>
               </div>
               <Table>
-                <TableHeader><TableRow><TableHead>Item</TableHead><TableHead className="text-right">Requested</TableHead><TableHead className="text-right">Approved</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="py-1">Item / Category</TableHead>
+                    <TableHead className="py-1">Department</TableHead>
+                    <TableHead className="py-1">Manufactured</TableHead>
+                    <TableHead className="py-1">Expiry</TableHead>
+                    <TableHead className="py-1 text-right">Quantity</TableHead>
+                    <TableHead className="py-1">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
                 <TableBody>
-                  {(items[o.id] ?? []).map(it => (
-                    <TableRow key={it.id}>
-                      <TableCell className="font-medium">{it.drug_name}</TableCell>
-                      <TableCell className="text-right">{it.quantity}</TableCell>
-                      <TableCell className="text-right">{it.approved_qty ?? "—"}</TableCell>
-                      <TableCell className="text-xs capitalize">{it.status}{it.reject_reason ? `: ${it.reject_reason}` : ""}</TableCell>
-                    </TableRow>
-                  ))}
+                  {(items[o.id] ?? []).map(it => {
+                    const m = meta[it.drug_id];
+                    return (
+                      <TableRow key={it.id} className="text-sm">
+                        <TableCell className="py-1 font-medium">{it.drug_name}{m?.category ? ` / ${m.category}` : ""}</TableCell>
+                        <TableCell className="py-1">{m?.department ?? "—"}</TableCell>
+                        <TableCell className="py-1">{m?.manufacture_date ?? "—"}</TableCell>
+                        <TableCell className="py-1">{m?.expiry_date ?? "—"}</TableCell>
+                        <TableCell className="py-1 text-right">{it.approved_qty ?? it.quantity}</TableCell>
+                        <TableCell className="py-1 capitalize">{it.status}{it.reject_reason ? `: ${it.reject_reason}` : ""}</TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
           ))}
-          <SignOffBlock />
         </div>
       </CardContent>
     </Card>
