@@ -3,7 +3,6 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/lib/auth-context";
 import { AppShell } from "@/components/AppShell";
-import { printElement } from "@/lib/print";
 
 import { supabase } from "@/integrations/supabase/client";
 import { registerBuyer } from "@/lib/buyer.functions";
@@ -17,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Trash2, FileText, Printer, ClipboardList } from "lucide-react";
+import { Plus, Trash2, FileText, ClipboardList } from "lucide-react";
 
 export const Route = createFileRoute("/pharmacy")({
   component: PharmacyPage,
@@ -527,58 +526,6 @@ function BuyerDispensedPanel({ mode }: { mode: "today" | "history" }) {
     </Card>
   );
 }
-
-type DailySale = { id: string; sale_type: string; total: number; amount_paid: number; payment_method: string | null };
-
-function DailyReportPanel() {
-  const [day, setDay] = useState(todayISO());
-  const [sales, setSales] = useState<DailySale[]>([]);
-
-  const load = async (d = day) => {
-    const { data, error } = await supabase.from("sales")
-      .select("id, sale_type, total, amount_paid, payment_method")
-      .gte("created_at", `${d}T00:00:00`).lte("created_at", `${d}T23:59:59`);
-    if (error) { toast.error(error.message); return; }
-    setSales((data as DailySale[]) ?? []);
-  };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
-
-  const sum = (f: (s: DailySale) => boolean) => sales.filter(f).reduce((a, b) => a + Number(b.total), 0);
-  const method = (m: string) => sales
-    .filter(s => (s.payment_method ?? "").toLowerCase().includes(m))
-    .reduce((a, b) => a + Number(b.amount_paid), 0);
-
-  const cards = [
-    { label: "Retail sales", value: sum(s => s.sale_type === "retail") },
-    { label: "Wholesale sales", value: sum(s => s.sale_type === "wholesale") },
-    { label: "Cash received", value: method("cash") },
-    { label: "M-Pesa received", value: method("mpesa") + method("m-pesa") },
-    { label: "Total sales", value: sum(() => true) },
-  ];
-
-  return (
-    <Card><CardContent className="p-5 space-y-4">
-      <div className="flex flex-wrap items-end gap-3 justify-between">
-        <div className="font-semibold">Daily Report</div>
-        <div className="flex items-end gap-2">
-          <div><Label className="text-xs">Date</Label><Input type="date" value={day} onChange={e => setDay(e.target.value)} /></div>
-          <Button onClick={() => load()}>Apply</Button>
-        </div>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {cards.map(c => (
-          <div key={c.label} className="rounded-xl border bg-card p-4">
-            <div className="text-xs text-muted-foreground">{c.label}</div>
-            <div className="text-xl font-bold mt-1">KSh {c.value.toFixed(2)}</div>
-          </div>
-        ))}
-      </div>
-      <p className="text-xs text-muted-foreground">{sales.length} sale(s) recorded on {day}.</p>
-    </CardContent></Card>
-  );
-}
-
-
 
 // =============== BUYER ACCOUNTS PANEL ===============
 
