@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { AppShell } from "@/components/AppShell";
-import { SignOffBlock } from "@/components/SignOff";
 import { printElement } from "@/lib/print";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -131,7 +130,6 @@ function AccountantPage() {
                     {reports.map(r => <ReportRow key={r.id} r={r} onChanged={load} />)}
                   </TableBody>
                 </Table>
-                <SignOffBlock />
               </div>
             </CardContent>
           </Card>
