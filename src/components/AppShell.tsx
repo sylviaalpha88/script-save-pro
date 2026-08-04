@@ -3,7 +3,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useSiteBranding } from "@/lib/site-branding";
 import { Button } from "@/components/ui/button";
 import {
-  Pill, LogOut, LayoutGrid, Package, Calculator, Truck, Globe, UserCog, MessageSquare, Briefcase,
+  Pill, LogOut, LayoutGrid, Package, Calculator, Truck, Globe, UserCog, MessageSquare, Briefcase, Tags,
 } from "lucide-react";
 import { allowedModules, type ModuleKey } from "@/lib/access";
 import { type ReactNode, useEffect } from "react";
