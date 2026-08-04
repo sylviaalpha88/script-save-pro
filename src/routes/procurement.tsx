@@ -365,7 +365,9 @@ function StoreView({ onAddNew }: { onAddNew: () => void }) {
 
 function NewInventoryForm({ onSaved }: { onSaved: () => void }) {
   const { profile } = useAuth();
+  const [services, setServices] = useState<Service[]>([]);
   const [f, setF] = useState({
+    service_name: "",
     sku: "", name: "", description: "", category: "Consumables", unit: "piece",
     measurement_per_item: "", department: "", reorder_level: "10", min_stock: "10",
     avg_stock: "30", max_stock: "100",
@@ -373,9 +375,19 @@ function NewInventoryForm({ onSaved }: { onSaved: () => void }) {
     unit_cost: "0", tax_vat: "0", freight_cost: "0",
     qty_ordered: "0", qty_received: "0", batch_number: "", manufacture_date: "", expiry_date: "",
     storage_location: "", quality_status: "pending",
-    buying_price: "0", selling_price_retail: "0", selling_price_wholesale: "0", wholesale_min_qty: "10",
+    buying_price: "0", wholesale_min_qty: "10",
   });
   const set = (k: keyof typeof f, v: string) => setF(p => ({ ...p, [k]: v }));
+
+  useEffect(() => {
+    supabase.from("services").select("id, name, unit, selling_price_retail, selling_price_wholesale").order("name")
+      .then(({ data }) => setServices((data as Service[]) ?? []));
+  }, []);
+
+  const svc = useMemo(
+    () => services.find(s => s.name.trim().toLowerCase() === f.service_name.trim().toLowerCase()) ?? null,
+    [services, f.service_name],
+  );
 
   const computedTotal = useMemo(() => {
     const qty = Number(f.qty_received || f.qty_ordered || 0);
@@ -386,7 +398,11 @@ function NewInventoryForm({ onSaved }: { onSaved: () => void }) {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile?.pharmacy_id) { toast.error("Your account is not linked to a pharmacy"); return; }
-    const retail = Number(f.selling_price_retail || 0);
+    if (!svc) { toast.error("Enter an existing service name. Add it first at Service Stock → Add New Service."); return; }
+    if (f.name.trim().toLowerCase() !== svc.name.trim().toLowerCase()) {
+      toast.error("The item / drug name must correspond with the service name."); return;
+    }
+    const retail = Number(svc.selling_price_retail || 0);
     const { error } = await supabase.from("drugs").insert({
       pharmacy_id: profile.pharmacy_id,
       name: f.name,
