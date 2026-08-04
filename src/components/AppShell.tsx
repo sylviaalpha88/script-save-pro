@@ -22,6 +22,7 @@ const TILES: Tile[] = [
   { to: "/director", label: "Admin Settings", icon: <UserCog className="h-5 w-5" />, tone: "bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100", module: "admin_settings" },
   { to: "/messages", label: "Messages", icon: <MessageSquare className="h-5 w-5" />, tone: "bg-teal-50 text-teal-700 border-teal-100 hover:bg-teal-100", module: "messages" },
   { to: "/vacancy", label: "Vacancy", icon: <Briefcase className="h-5 w-5" />, tone: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-100 hover:bg-fuchsia-100", module: "vacancy" },
+  { to: "/inventory", label: "Service Stock", icon: <Tags className="h-5 w-5" />, tone: "bg-lime-50 text-lime-700 border-lime-100 hover:bg-lime-100", module: "service_stock" },
 ];
 
 export function AppShell({
