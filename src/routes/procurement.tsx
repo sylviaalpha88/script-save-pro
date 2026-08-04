@@ -433,8 +433,19 @@ function NewInventoryForm({ onSaved }: { onSaved: () => void }) {
       <Card>
         <CardHeader><CardTitle>Product &amp; Item Details</CardTitle></CardHeader>
         <CardContent className="grid sm:grid-cols-2 gap-4">
+          <div className="sm:col-span-2">
+            <Label>Service Name <span className="text-destructive">*</span></Label>
+            <Input list="service-names" value={f.service_name} onChange={e => set("service_name", e.target.value)} required
+              placeholder="search a service — hint: the service name is the drug name" />
+            <datalist id="service-names">
+              {services.map(s => <option key={s.id} value={s.name} />)}
+            </datalist>
+            {!svc && f.service_name.trim() !== "" && (
+              <p className="text-xs text-destructive mt-1">No service with this name. Add it first at Service Stock → Add New Service.</p>
+            )}
+          </div>
           <div><Label>SKU / Part Number</Label><Input value={f.sku} onChange={e => set("sku", e.target.value)} required /></div>
-          <div><Label>Item Name</Label><Input value={f.name} onChange={e => set("name", e.target.value)} required /></div>
+          <div><Label>Item Name (must match the service name)</Label><Input value={f.name} onChange={e => set("name", e.target.value)} required /></div>
           <div className="sm:col-span-2"><Label>Description</Label><Textarea rows={3} value={f.description} onChange={e => set("description", e.target.value)} /></div>
           <div><Label>Category</Label><Input value={f.category} onChange={e => set("category", e.target.value)} placeholder="Consumables" /></div>
           <div>
