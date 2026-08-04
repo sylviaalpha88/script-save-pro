@@ -119,6 +119,19 @@ function DrugPicker({ drugs, mode, onAdd }: { drugs: Drug[]; mode: SaleMode; onA
         <Button type="button" disabled={!sel} onClick={() => {
           if (!sel) return;
           const n = Math.max(1, Number(qty) || 1);
+          const price = priceOf(sel);
+          if (!price || price <= 0) {
+            toast.error(`${sel.name} has no ${mode} price set. Set it at Service Stock first.`);
+            return;
+          }
+          if (Number(sel.stock_quantity) <= 0) {
+            toast.error(`${sel.name} is out of stock in the pharmacy store. Make an order at Procurement first.`);
+            return;
+          }
+          if (n > Number(sel.stock_quantity)) {
+            toast.error(`Pharmacy store holds only ${sel.stock_quantity} of ${sel.name}.`);
+            return;
+          }
           if (mode === "wholesale" && n < sel.wholesale_min_qty) {
             toast.error(`Wholesale requires at least ${sel.wholesale_min_qty} ${sel.unit}s of ${sel.name}`);
             return;
