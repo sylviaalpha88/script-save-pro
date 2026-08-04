@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { canAccess } from "@/lib/access";
@@ -6,6 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { SignOffBlock } from "@/components/SignOff";
 import { printElement } from "@/lib/print";
 import { supabase } from "@/integrations/supabase/client";
+import type { Service } from "@/routes/inventory";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -297,7 +298,6 @@ function StoreView({ onAddNew }: { onAddNew: () => void }) {
       <CardHeader className="flex flex-row items-center justify-between gap-4 flex-wrap">
         <CardTitle className="flex items-center gap-2"><Package className="h-5 w-5" />Goods on Store ({rows.length})</CardTitle>
         <div className="flex items-center gap-2">
-          <Link to="/inventory"><Button variant="outline">Prices &amp; Stock</Button></Link>
           <Button onClick={onAddNew}><Plus className="h-4 w-4 mr-1" />Add New Inventory</Button>
         </div>
       </CardHeader>
@@ -436,7 +436,7 @@ function NewInventoryForm({ onSaved }: { onSaved: () => void }) {
       buying_price: Number(f.buying_price || f.unit_cost || 0),
       selling_price: retail,
       selling_price_retail: retail,
-      selling_price_wholesale: Number(f.selling_price_wholesale || 0),
+      selling_price_wholesale: Number(svc.selling_price_wholesale || 0),
       wholesale_min_qty: Number(f.wholesale_min_qty || 10),
     });
     if (error) { toast.error(error.message); return; }
