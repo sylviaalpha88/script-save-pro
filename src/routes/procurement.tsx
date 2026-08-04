@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { canAccess } from "@/lib/access";
@@ -6,6 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { SignOffBlock } from "@/components/SignOff";
 import { printElement } from "@/lib/print";
 import { supabase } from "@/integrations/supabase/client";
+import type { Service } from "@/routes/inventory";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -174,10 +175,12 @@ type SOItem = {
   id: string; order_id: string; drug_id: string; drug_name: string;
   quantity: number; approved_qty: number | null; status: string; reject_reason: string | null;
 };
+type DrugMeta = { id: string; category: string | null; department: string | null; manufacture_date: string | null; expiry_date: string | null };
 
 function PharmacyRequestsPanel() {
   const [orders, setOrders] = useState<SOrder[]>([]);
   const [items, setItems] = useState<Record<string, SOItem[]>>({});
+  const [meta, setMeta] = useState<Record<string, DrugMeta>>({});
   const [busy, setBusy] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -195,7 +198,15 @@ function PharmacyRequestsPanel() {
       const grouped: Record<string, SOItem[]> = {};
       ((its as SOItem[]) ?? []).forEach(it => { (grouped[it.order_id] ||= []).push(it); });
       setItems(grouped);
-    } else setItems({});
+      const drugIds = Array.from(new Set(((its as SOItem[]) ?? []).map(i => i.drug_id)));
+      if (drugIds.length) {
+        const { data: ds } = await supabase.from("drugs")
+          .select("id, category, department, manufacture_date, expiry_date").in("id", drugIds);
+        const m: Record<string, DrugMeta> = {};
+        ((ds as DrugMeta[]) ?? []).forEach(d => { m[d.id] = d; });
+        setMeta(m);
+      } else setMeta({});
+    } else { setItems({}); setMeta({}); }
   };
   useEffect(() => { load(); }, []);
 
@@ -248,21 +259,34 @@ function PharmacyRequestsPanel() {
                 </div>
               </div>
               <Table>
-                <TableHeader><TableRow><TableHead>Item</TableHead><TableHead className="text-right">Requested</TableHead><TableHead className="text-right">Approved</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="py-1">Item / Category</TableHead>
+                    <TableHead className="py-1">Department</TableHead>
+                    <TableHead className="py-1">Manufactured</TableHead>
+                    <TableHead className="py-1">Expiry</TableHead>
+                    <TableHead className="py-1 text-right">Quantity</TableHead>
+                    <TableHead className="py-1">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
                 <TableBody>
-                  {(items[o.id] ?? []).map(it => (
-                    <TableRow key={it.id}>
-                      <TableCell className="font-medium">{it.drug_name}</TableCell>
-                      <TableCell className="text-right">{it.quantity}</TableCell>
-                      <TableCell className="text-right">{it.approved_qty ?? "—"}</TableCell>
-                      <TableCell className="text-xs capitalize">{it.status}{it.reject_reason ? `: ${it.reject_reason}` : ""}</TableCell>
-                    </TableRow>
-                  ))}
+                  {(items[o.id] ?? []).map(it => {
+                    const m = meta[it.drug_id];
+                    return (
+                      <TableRow key={it.id} className="text-sm">
+                        <TableCell className="py-1 font-medium">{it.drug_name}{m?.category ? ` / ${m.category}` : ""}</TableCell>
+                        <TableCell className="py-1">{m?.department ?? "—"}</TableCell>
+                        <TableCell className="py-1">{m?.manufacture_date ?? "—"}</TableCell>
+                        <TableCell className="py-1">{m?.expiry_date ?? "—"}</TableCell>
+                        <TableCell className="py-1 text-right">{it.approved_qty ?? it.quantity}</TableCell>
+                        <TableCell className="py-1 capitalize">{it.status}{it.reject_reason ? `: ${it.reject_reason}` : ""}</TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
           ))}
-          <SignOffBlock />
         </div>
       </CardContent>
     </Card>
@@ -297,7 +321,6 @@ function StoreView({ onAddNew }: { onAddNew: () => void }) {
       <CardHeader className="flex flex-row items-center justify-between gap-4 flex-wrap">
         <CardTitle className="flex items-center gap-2"><Package className="h-5 w-5" />Goods on Store ({rows.length})</CardTitle>
         <div className="flex items-center gap-2">
-          <Link to="/inventory"><Button variant="outline">Prices &amp; Stock</Button></Link>
           <Button onClick={onAddNew}><Plus className="h-4 w-4 mr-1" />Add New Inventory</Button>
         </div>
       </CardHeader>
@@ -365,7 +388,9 @@ function StoreView({ onAddNew }: { onAddNew: () => void }) {
 
 function NewInventoryForm({ onSaved }: { onSaved: () => void }) {
   const { profile } = useAuth();
+  const [services, setServices] = useState<Service[]>([]);
   const [f, setF] = useState({
+    service_name: "",
     sku: "", name: "", description: "", category: "Consumables", unit: "piece",
     measurement_per_item: "", department: "", reorder_level: "10", min_stock: "10",
     avg_stock: "30", max_stock: "100",
@@ -373,9 +398,19 @@ function NewInventoryForm({ onSaved }: { onSaved: () => void }) {
     unit_cost: "0", tax_vat: "0", freight_cost: "0",
     qty_ordered: "0", qty_received: "0", batch_number: "", manufacture_date: "", expiry_date: "",
     storage_location: "", quality_status: "pending",
-    buying_price: "0", selling_price_retail: "0", selling_price_wholesale: "0", wholesale_min_qty: "10",
+    buying_price: "0", wholesale_min_qty: "10",
   });
   const set = (k: keyof typeof f, v: string) => setF(p => ({ ...p, [k]: v }));
+
+  useEffect(() => {
+    supabase.from("services").select("id, name, unit, selling_price_retail, selling_price_wholesale").order("name")
+      .then(({ data }) => setServices((data as Service[]) ?? []));
+  }, []);
+
+  const svc = useMemo(
+    () => services.find(s => s.name.trim().toLowerCase() === f.service_name.trim().toLowerCase()) ?? null,
+    [services, f.service_name],
+  );
 
   const computedTotal = useMemo(() => {
     const qty = Number(f.qty_received || f.qty_ordered || 0);
@@ -386,7 +421,11 @@ function NewInventoryForm({ onSaved }: { onSaved: () => void }) {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile?.pharmacy_id) { toast.error("Your account is not linked to a pharmacy"); return; }
-    const retail = Number(f.selling_price_retail || 0);
+    if (!svc) { toast.error("Enter an existing service name. Add it first at Service Stock → Add New Service."); return; }
+    if (f.name.trim().toLowerCase() !== svc.name.trim().toLowerCase()) {
+      toast.error("The item / drug name must correspond with the service name."); return;
+    }
+    const retail = Number(svc.selling_price_retail || 0);
     const { error } = await supabase.from("drugs").insert({
       pharmacy_id: profile.pharmacy_id,
       name: f.name,
@@ -420,7 +459,7 @@ function NewInventoryForm({ onSaved }: { onSaved: () => void }) {
       buying_price: Number(f.buying_price || f.unit_cost || 0),
       selling_price: retail,
       selling_price_retail: retail,
-      selling_price_wholesale: Number(f.selling_price_wholesale || 0),
+      selling_price_wholesale: Number(svc.selling_price_wholesale || 0),
       wholesale_min_qty: Number(f.wholesale_min_qty || 10),
     });
     if (error) { toast.error(error.message); return; }
@@ -433,8 +472,19 @@ function NewInventoryForm({ onSaved }: { onSaved: () => void }) {
       <Card>
         <CardHeader><CardTitle>Product &amp; Item Details</CardTitle></CardHeader>
         <CardContent className="grid sm:grid-cols-2 gap-4">
+          <div className="sm:col-span-2">
+            <Label>Service Name <span className="text-destructive">*</span></Label>
+            <Input list="service-names" value={f.service_name} onChange={e => set("service_name", e.target.value)} required
+              placeholder="search a service — hint: the service name is the drug name" />
+            <datalist id="service-names">
+              {services.map(s => <option key={s.id} value={s.name} />)}
+            </datalist>
+            {!svc && f.service_name.trim() !== "" && (
+              <p className="text-xs text-destructive mt-1">No service with this name. Add it first at Service Stock → Add New Service.</p>
+            )}
+          </div>
           <div><Label>SKU / Part Number</Label><Input value={f.sku} onChange={e => set("sku", e.target.value)} required /></div>
-          <div><Label>Item Name</Label><Input value={f.name} onChange={e => set("name", e.target.value)} required /></div>
+          <div><Label>Item Name (must match the service name)</Label><Input value={f.name} onChange={e => set("name", e.target.value)} required /></div>
           <div className="sm:col-span-2"><Label>Description</Label><Textarea rows={3} value={f.description} onChange={e => set("description", e.target.value)} /></div>
           <div><Label>Category</Label><Input value={f.category} onChange={e => set("category", e.target.value)} placeholder="Consumables" /></div>
           <div>
@@ -479,8 +529,8 @@ function NewInventoryForm({ onSaved }: { onSaved: () => void }) {
             <Input readOnly value={computedTotal.toFixed(2)} className="bg-muted font-semibold" />
           </div>
           <div><Label>Buying price per {f.unit}</Label><Input type="number" step="0.01" value={f.buying_price} onChange={e => set("buying_price", e.target.value)} /></div>
-          <div><Label>Retail selling price</Label><Input type="number" step="0.01" value={f.selling_price_retail} onChange={e => set("selling_price_retail", e.target.value)} /></div>
-          <div><Label>Wholesale selling price</Label><Input type="number" step="0.01" value={f.selling_price_wholesale} onChange={e => set("selling_price_wholesale", e.target.value)} /></div>
+          <div><Label>Retail selling price (from service)</Label><Input readOnly value={svc ? Number(svc.selling_price_retail).toFixed(2) : ""} className="bg-muted font-semibold" placeholder="pick a service name first" /></div>
+          <div><Label>Wholesale selling price (from service)</Label><Input readOnly value={svc ? Number(svc.selling_price_wholesale).toFixed(2) : ""} className="bg-muted font-semibold" placeholder="pick a service name first" /></div>
           <div><Label>Min qty to qualify as wholesale</Label><Input type="number" value={f.wholesale_min_qty} onChange={e => set("wholesale_min_qty", e.target.value)} /></div>
         </CardContent>
       </Card>

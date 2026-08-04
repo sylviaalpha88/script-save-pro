@@ -11,129 +11,119 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Package } from "lucide-react";
+import { Trash2, Tags } from "lucide-react";
 
 export const Route = createFileRoute("/inventory")({
-  component: InventoryPage,
+  component: ServiceStockPage,
+  head: () => ({
+    meta: [
+      { title: "Service Stock · Services, Retail & Wholesale Prices" },
+      { name: "description", content: "Create services and set their retail and wholesale selling prices, which inventory items pick up automatically." },
+      { property: "og:title", content: "Service Stock · Services, Retail & Wholesale Prices" },
+      { property: "og:description", content: "Create services and set their retail and wholesale selling prices, which inventory items pick up automatically." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
-type Drug = {
+export type Service = {
   id: string;
   name: string;
   unit: "tab" | "cap" | "piece";
-  buying_price: number;
-  selling_price: number;
   selling_price_retail: number;
   selling_price_wholesale: number;
-  wholesale_min_qty: number;
-  stock_quantity: number;
-  min_stock: number;
 };
 
-function InventoryPage() {
+function ServiceStockPage() {
   const { profile, loading } = useAuth();
+  const [reload, setReload] = useState(0);
   return (
-    <AppShell title="Inventory" subtitle="Track stock, manage inventory and supplies">
-      {!loading && profile && !canAccess(profile, "procurement") ? (
+    <AppShell title="Service Stock" subtitle="Define services and the prices every drug added under them will use">
+      {!loading && profile && !canAccess(profile, "service_stock") ? (
         <p className="text-destructive font-semibold">You don't have permission to access this page.</p>
       ) : (
-        <Tabs defaultValue="stock" className="space-y-6">
+        <Tabs defaultValue="manage" className="space-y-6">
           <TabsList>
-            <TabsTrigger value="stock">Manage Stock</TabsTrigger>
-            <TabsTrigger value="add">Add New Drug</TabsTrigger>
+            <TabsTrigger value="manage">Manage Service</TabsTrigger>
+            <TabsTrigger value="add">Add New Service</TabsTrigger>
           </TabsList>
-          <TabsContent value="stock"><StockList /></TabsContent>
-          <TabsContent value="add"><AddDrug onAdded={() => {}} /></TabsContent>
+          <TabsContent value="manage"><ServiceList key={reload} /></TabsContent>
+          <TabsContent value="add"><AddService onAdded={() => setReload(n => n + 1)} /></TabsContent>
         </Tabs>
       )}
     </AppShell>
   );
 }
 
-function StockList() {
-  const [drugs, setDrugs] = useState<Drug[]>([]);
-  const [edit, setEdit] = useState<Record<string, Partial<Drug>>>({});
+function ServiceList() {
+  const [rows, setRows] = useState<Service[]>([]);
+  const [edit, setEdit] = useState<Record<string, Partial<Service>>>({});
 
   const load = async () => {
-    const { data, error } = await supabase.from("drugs").select("*").order("name");
+    const { data, error } = await supabase
+      .from("services")
+      .select("id, name, unit, selling_price_retail, selling_price_wholesale")
+      .order("name");
     if (error) { toast.error(error.message); return; }
-    setDrugs((data as Drug[]) ?? []);
+    setRows((data as Service[]) ?? []);
   };
   useEffect(() => { load(); }, []);
 
   const save = async (id: string) => {
     const patch = edit[id];
     if (!patch) return;
-    const { error } = await supabase.from("drugs").update(patch).eq("id", id);
+    const { error } = await supabase.from("services").update(patch).eq("id", id);
     if (error) { toast.error(error.message); return; }
-    toast.success("Updated");
+    toast.success("Service updated");
     setEdit(prev => { const c = { ...prev }; delete c[id]; return c; });
     await load();
   };
 
-  const addStock = async (id: string, qty: number) => {
-    const d = drugs.find(x => x.id === id)!;
-    const { error } = await supabase.from("drugs").update({ stock_quantity: d.stock_quantity + qty }).eq("id", id);
+  const remove = async (s: Service) => {
+    if (!confirm(`Delete service "${s.name}"?`)) return;
+    const { error } = await supabase.from("services").delete().eq("id", s.id);
     if (error) { toast.error(error.message); return; }
-    toast.success(`Added ${qty} units`);
+    toast.success("Deleted");
     await load();
   };
 
   return (
     <Card>
-      <CardHeader><CardTitle className="flex items-center gap-2"><Package className="h-5 w-5"/>Current Stock</CardTitle></CardHeader>
+      <CardHeader><CardTitle className="flex items-center gap-2"><Tags className="h-5 w-5" />Current Service ({rows.length})</CardTitle></CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Drug</TableHead><TableHead>Unit</TableHead>
-              <TableHead>Buy</TableHead>
+              <TableHead>Service name</TableHead>
+              <TableHead>Unit</TableHead>
               <TableHead>Retail Price</TableHead>
               <TableHead>Wholesale Price</TableHead>
-              <TableHead>WS Min Qty</TableHead>
-              <TableHead>Stock</TableHead><TableHead>Min</TableHead>
-              <TableHead>Add Stock</TableHead><TableHead>Actions</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {drugs.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground">No drugs yet. Add one in the next tab.</TableCell></TableRow>}
-            {drugs.map(d => {
-              const low = d.stock_quantity < d.min_stock;
-              const e = edit[d.id] ?? {};
+            {rows.length === 0 && (
+              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">No services yet. Add one in “Add New Service”.</TableCell></TableRow>
+            )}
+            {rows.map(s => {
+              const e = edit[s.id] ?? {};
               return (
-                <TableRow key={d.id} className={low ? "bg-destructive/5" : ""}>
-                  <TableCell className="font-medium">{d.name}</TableCell>
-                  <TableCell className="capitalize">{d.unit}</TableCell>
+                <TableRow key={s.id}>
+                  <TableCell className="font-medium">{s.name}</TableCell>
+                  <TableCell className="capitalize">{s.unit}</TableCell>
                   <TableCell>
-                    <Input type="number" step="0.01" className="w-24" defaultValue={d.buying_price}
-                      onChange={ev => setEdit(p => ({ ...p, [d.id]: { ...e, buying_price: Number(ev.target.value) } }))} />
+                    <Input type="number" step="0.01" className="w-28" defaultValue={s.selling_price_retail}
+                      onChange={ev => setEdit(p => ({ ...p, [s.id]: { ...e, selling_price_retail: Number(ev.target.value) } }))} />
                   </TableCell>
                   <TableCell>
-                    <Input type="number" step="0.01" className="w-24" defaultValue={d.selling_price_retail}
-                      onChange={ev => setEdit(p => ({ ...p, [d.id]: { ...e, selling_price_retail: Number(ev.target.value), selling_price: Number(ev.target.value) } }))} />
+                    <Input type="number" step="0.01" className="w-28" defaultValue={s.selling_price_wholesale}
+                      onChange={ev => setEdit(p => ({ ...p, [s.id]: { ...e, selling_price_wholesale: Number(ev.target.value) } }))} />
                   </TableCell>
-                  <TableCell>
-                    <Input type="number" step="0.01" className="w-24" defaultValue={d.selling_price_wholesale}
-                      onChange={ev => setEdit(p => ({ ...p, [d.id]: { ...e, selling_price_wholesale: Number(ev.target.value) } }))} />
-                  </TableCell>
-                  <TableCell>
-                    <Input type="number" className="w-20" defaultValue={d.wholesale_min_qty}
-                      onChange={ev => setEdit(p => ({ ...p, [d.id]: { ...e, wholesale_min_qty: Number(ev.target.value) } }))} />
-                  </TableCell>
-                  <TableCell>
-                    {low ? <Badge variant="destructive">{d.stock_quantity}</Badge> : <span className="font-medium">{d.stock_quantity}</span>}
-                  </TableCell>
-                  <TableCell>
-                    <Input type="number" className="w-20" defaultValue={d.min_stock}
-                      onChange={ev => setEdit(p => ({ ...p, [d.id]: { ...e, min_stock: Number(ev.target.value) } }))} />
-                  </TableCell>
-                  <TableCell>
-                    <AddStockInline onAdd={(q) => addStock(d.id, q)} />
-                  </TableCell>
-                  <TableCell>
-                    <Button size="sm" onClick={() => save(d.id)}>Save</Button>
+                  <TableCell className="flex gap-2">
+                    <Button size="sm" onClick={() => save(s.id)}>Save</Button>
+                    <Button size="sm" variant="ghost" onClick={() => remove(s)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </TableCell>
                 </TableRow>
               );
@@ -145,62 +135,43 @@ function StockList() {
   );
 }
 
-function AddStockInline({ onAdd }: { onAdd: (n: number) => void }) {
-  const [v, setV] = useState("");
-  return (
-    <div className="flex gap-1">
-      <Input type="number" className="w-20" value={v} onChange={e => setV(e.target.value)} placeholder="qty" />
-      <Button size="sm" variant="outline" onClick={() => { const n = Number(v); if (n > 0) { onAdd(n); setV(""); } }}>
-        <Plus className="h-4 w-4"/>
-      </Button>
-    </div>
-  );
-}
-
-function AddDrug({ onAdded }: { onAdded: () => void }) {
+function AddService({ onAdded }: { onAdded: () => void }) {
   const { profile } = useAuth();
   const [name, setName] = useState("");
   const [unit, setUnit] = useState<"tab" | "cap" | "piece">("tab");
-  const [buying, setBuying] = useState("");
   const [retail, setRetail] = useState("");
   const [wholesale, setWholesale] = useState("");
-  const [wsMin, setWsMin] = useState("10");
-  const [stock, setStock] = useState("");
-  const [min, setMin] = useState("10");
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const pharmacyId = profile?.pharmacy_id;
     if (!pharmacyId) { toast.error("Your account is not linked to a pharmacy"); return; }
-    const retailNum = Number(retail);
-    const { error } = await supabase.from("drugs").insert({
-      name, unit,
-      buying_price: Number(buying),
-      selling_price: retailNum,
-      selling_price_retail: retailNum,
+    const { error } = await supabase.from("services").insert({
+      name: name.trim(),
+      unit,
+      selling_price_retail: Number(retail),
       selling_price_wholesale: Number(wholesale),
-      wholesale_min_qty: Number(wsMin || 10),
-      stock_quantity: Number(stock || 0),
-      min_stock: Number(min || 10),
       pharmacy_id: pharmacyId,
     });
     if (error) { toast.error(error.message); return; }
-    toast.success("Drug added");
-    setName(""); setBuying(""); setRetail(""); setWholesale(""); setWsMin("10"); setStock(""); setMin("10");
+    toast.success("Service added");
+    setName(""); setRetail(""); setWholesale("");
     onAdded();
   };
 
-
   return (
     <Card className="max-w-2xl">
-      <CardHeader><CardTitle>Add New Drug Stock</CardTitle></CardHeader>
+      <CardHeader><CardTitle>Add New Service</CardTitle></CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="grid sm:grid-cols-2 gap-4">
-          <div className="sm:col-span-2"><Label>Drug name</Label><Input value={name} onChange={e=>setName(e.target.value)} required /></div>
+          <div className="sm:col-span-2">
+            <Label>Service name <span className="text-destructive">*</span></Label>
+            <Input value={name} onChange={e => setName(e.target.value)} required placeholder="hint: the service name is the drug name" />
+          </div>
           <div>
             <Label>Unit (per)</Label>
-            <Select value={unit} onValueChange={(v)=>setUnit(v as any)}>
-              <SelectTrigger><SelectValue/></SelectTrigger>
+            <Select value={unit} onValueChange={v => setUnit(v as "tab" | "cap" | "piece")}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="tab">Tablet</SelectItem>
                 <SelectItem value="cap">Capsule</SelectItem>
@@ -208,13 +179,9 @@ function AddDrug({ onAdded }: { onAdded: () => void }) {
               </SelectContent>
             </Select>
           </div>
-          <div><Label>Initial stock quantity</Label><Input type="number" value={stock} onChange={e=>setStock(e.target.value)} /></div>
-          <div><Label>Buying price (per {unit})</Label><Input type="number" step="0.01" value={buying} onChange={e=>setBuying(e.target.value)} required /></div>
-          <div><Label>Retail selling price (per {unit})</Label><Input type="number" step="0.01" value={retail} onChange={e=>setRetail(e.target.value)} required /></div>
-          <div><Label>Wholesale selling price (per {unit})</Label><Input type="number" step="0.01" value={wholesale} onChange={e=>setWholesale(e.target.value)} required /></div>
-          <div><Label>Min quantity to qualify as wholesale</Label><Input type="number" value={wsMin} onChange={e=>setWsMin(e.target.value)} /></div>
-          <div><Label>Minimum stock alert</Label><Input type="number" value={min} onChange={e=>setMin(e.target.value)} /></div>
-          <div className="sm:col-span-2"><Button type="submit" className="w-full">Save Drug</Button></div>
+          <div><Label>Retail selling price (per {unit})</Label><Input type="number" step="0.01" value={retail} onChange={e => setRetail(e.target.value)} required /></div>
+          <div><Label>Wholesale selling price (per {unit})</Label><Input type="number" step="0.01" value={wholesale} onChange={e => setWholesale(e.target.value)} required /></div>
+          <div className="sm:col-span-2"><Button type="submit" className="w-full">Save Service</Button></div>
         </form>
       </CardContent>
     </Card>

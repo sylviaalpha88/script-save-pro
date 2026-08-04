@@ -3,8 +3,6 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/lib/auth-context";
 import { AppShell } from "@/components/AppShell";
-import { SignOffBlock } from "@/components/SignOff";
-import { printElement } from "@/lib/print";
 
 import { supabase } from "@/integrations/supabase/client";
 import { registerBuyer } from "@/lib/buyer.functions";
@@ -18,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Trash2, FileText, Printer, ClipboardList } from "lucide-react";
+import { Plus, Trash2, FileText, ClipboardList } from "lucide-react";
 
 export const Route = createFileRoute("/pharmacy")({
   component: PharmacyPage,
@@ -45,20 +43,20 @@ function PharmacyPage() {
             <TabsTrigger value="buyer_orders">Buyers Order</TabsTrigger>
             <TabsTrigger value="today">Today</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
-            <TabsTrigger value="daily">Daily Report</TabsTrigger>
             <TabsTrigger value="retail">Retail</TabsTrigger>
             <TabsTrigger value="wholesale">Wholesale</TabsTrigger>
             <TabsTrigger value="orders_review">Order Review</TabsTrigger>
             <TabsTrigger value="make_order">Make Order</TabsTrigger>
+            <TabsTrigger value="store">Pharmacy Store</TabsTrigger>
           </TabsList>
           <TabsContent value="buyer_orders"><BuyersPanel /></TabsContent>
           <TabsContent value="today"><BuyerDispensedPanel mode="today" /></TabsContent>
           <TabsContent value="history"><BuyerDispensedPanel mode="history" /></TabsContent>
-          <TabsContent value="daily"><DailyReportPanel /></TabsContent>
           <TabsContent value="retail"><RetailForm /></TabsContent>
           <TabsContent value="wholesale"><WholesaleForm /></TabsContent>
           <TabsContent value="orders_review"><BuyerOrdersPanel /></TabsContent>
           <TabsContent value="make_order"><MakeOrderPanel /></TabsContent>
+          <TabsContent value="store"><PharmacyStorePanel /></TabsContent>
         </Tabs>
 
 
@@ -121,6 +119,19 @@ function DrugPicker({ drugs, mode, onAdd }: { drugs: Drug[]; mode: SaleMode; onA
         <Button type="button" disabled={!sel} onClick={() => {
           if (!sel) return;
           const n = Math.max(1, Number(qty) || 1);
+          const price = priceOf(sel);
+          if (!price || price <= 0) {
+            toast.error(`${sel.name} has no ${mode} price set. Set it at Service Stock first.`);
+            return;
+          }
+          if (Number(sel.stock_quantity) <= 0) {
+            toast.error(`${sel.name} is out of stock in the pharmacy store. Make an order at Procurement first.`);
+            return;
+          }
+          if (n > Number(sel.stock_quantity)) {
+            toast.error(`Pharmacy store holds only ${sel.stock_quantity} of ${sel.name}.`);
+            return;
+          }
           if (mode === "wholesale" && n < sel.wholesale_min_qty) {
             toast.error(`Wholesale requires at least ${sel.wholesale_min_qty} ${sel.unit}s of ${sel.name}`);
             return;
@@ -529,58 +540,6 @@ function BuyerDispensedPanel({ mode }: { mode: "today" | "history" }) {
   );
 }
 
-type DailySale = { id: string; sale_type: string; total: number; amount_paid: number; payment_method: string | null };
-
-function DailyReportPanel() {
-  const [day, setDay] = useState(todayISO());
-  const [sales, setSales] = useState<DailySale[]>([]);
-
-  const load = async (d = day) => {
-    const { data, error } = await supabase.from("sales")
-      .select("id, sale_type, total, amount_paid, payment_method")
-      .gte("created_at", `${d}T00:00:00`).lte("created_at", `${d}T23:59:59`);
-    if (error) { toast.error(error.message); return; }
-    setSales((data as DailySale[]) ?? []);
-  };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
-
-  const sum = (f: (s: DailySale) => boolean) => sales.filter(f).reduce((a, b) => a + Number(b.total), 0);
-  const method = (m: string) => sales
-    .filter(s => (s.payment_method ?? "").toLowerCase().includes(m))
-    .reduce((a, b) => a + Number(b.amount_paid), 0);
-
-  const cards = [
-    { label: "Retail sales", value: sum(s => s.sale_type === "retail") },
-    { label: "Wholesale sales", value: sum(s => s.sale_type === "wholesale") },
-    { label: "Cash received", value: method("cash") },
-    { label: "M-Pesa received", value: method("mpesa") + method("m-pesa") },
-    { label: "Total sales", value: sum(() => true) },
-  ];
-
-  return (
-    <Card><CardContent className="p-5 space-y-4">
-      <div className="flex flex-wrap items-end gap-3 justify-between">
-        <div className="font-semibold">Daily Report</div>
-        <div className="flex items-end gap-2">
-          <div><Label className="text-xs">Date</Label><Input type="date" value={day} onChange={e => setDay(e.target.value)} /></div>
-          <Button onClick={() => load()}>Apply</Button>
-        </div>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {cards.map(c => (
-          <div key={c.label} className="rounded-xl border bg-card p-4">
-            <div className="text-xs text-muted-foreground">{c.label}</div>
-            <div className="text-xl font-bold mt-1">KSh {c.value.toFixed(2)}</div>
-          </div>
-        ))}
-      </div>
-      <p className="text-xs text-muted-foreground">{sales.length} sale(s) recorded on {day}.</p>
-    </CardContent></Card>
-  );
-}
-
-
-
 // =============== BUYER ACCOUNTS PANEL ===============
 
 type WBuyer = {
@@ -928,27 +887,25 @@ type MyOrderItem = { id: string; order_id: string; drug_name: string; quantity: 
 function MakeOrderPanel() {
   const { profile } = useAuth();
   const [all, setAll] = useState<ProcDrug[]>([]);
-  const [store, setStore] = useState<{ drug_id: string; quantity: number; drugs: { name: string; unit: string } | null }[]>([]);
   const [orders, setOrders] = useState<MyOrder[]>([]);
   const [oItems, setOItems] = useState<Record<string, MyOrderItem[]>>({});
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("");
   const [dept, setDept] = useState("");
   const [meas, setMeas] = useState("");
+  const [sel, setSel] = useState<ProcDrug | null>(null);
+  const [qty, setQty] = useState("");
   const [lines, setLines] = useState<{ drug_id: string; drug_name: string; quantity: number }[]>([]);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
-  const printRef = useRef<HTMLDivElement>(null);
 
   const load = async () => {
     const { data: ds } = await supabase.from("drugs").select(DRUG_COLS).order("name");
     setAll(((ds as Drug[]) ?? []).map(d => ({ ...d, proc_stock: Number(d.stock_quantity) })));
-    const { data: ps } = await supabase.from("pharmacy_stock").select("drug_id, quantity, drugs(name, unit)").order("quantity", { ascending: false });
-    setStore((ps as any) ?? []);
     const { data: os } = await supabase.from("stock_orders")
       .select("id, status, note, created_at").order("created_at", { ascending: false }).limit(50);
     setOrders((os as MyOrder[]) ?? []);
-    const ids = (os ?? []).map((o: any) => o.id);
+    const ids = ((os as MyOrder[]) ?? []).map(o => o.id);
     if (ids.length) {
       const { data: its } = await supabase.from("stock_order_items")
         .select("id, order_id, drug_name, quantity, approved_qty, status, reject_reason").in("order_id", ids);
@@ -962,21 +919,26 @@ function MakeOrderPanel() {
   const uniq = (vals: (string | null)[]) => [...new Set(vals.filter(Boolean) as string[])].sort();
   const categories = useMemo(() => uniq(all.map(d => d.category)), [all]);
   const departments = useMemo(() => uniq(all.map(d => d.department)), [all]);
-  const measures = useMemo(() => uniq(all.map(d => d.measurement_per_item)), [all]);
 
   const matches = useMemo(() => {
     const s = q.trim().toLowerCase();
+    if (!s) return [];
+    const m = meas.trim().toLowerCase();
     return all.filter(d =>
-      (!s || d.name.toLowerCase().includes(s)) &&
+      d.name.toLowerCase().includes(s) &&
       (!cat || d.category === cat) &&
       (!dept || d.department === dept) &&
-      (!meas || d.measurement_per_item === meas)
-    ).slice(0, 30);
+      (!m || (d.measurement_per_item ?? "").toLowerCase().includes(m))
+    ).slice(0, 20);
   }, [all, q, cat, dept, meas]);
 
-  const addLine = (d: ProcDrug) => {
-    if (lines.some(l => l.drug_id === d.id)) { toast.error("Already on the order"); return; }
-    setLines(prev => [...prev, { drug_id: d.id, drug_name: d.name, quantity: 1 }]);
+  const add = () => {
+    if (!sel) { toast.error("Pick an item from the list"); return; }
+    const n = Number(qty);
+    if (!n || n <= 0) { toast.error("Enter the quantity requested"); return; }
+    if (lines.some(l => l.drug_id === sel.id)) { toast.error("Already on the order"); return; }
+    setLines(prev => [...prev, { drug_id: sel.id, drug_name: sel.name, quantity: n }]);
+    setSel(null); setQ(""); setQty("");
   };
 
   const submit = async () => {
@@ -997,7 +959,7 @@ function MakeOrderPanel() {
         }))
       );
       if (iErr) throw iErr;
-      toast.success("Order saved · waiting for approval at Procurement");
+      toast.success("Submitted to Procurement for approval");
       setLines([]); setNote("");
       load();
     } catch (e) { toast.error((e as Error).message); }
@@ -1010,7 +972,21 @@ function MakeOrderPanel() {
         <CardHeader><CardTitle className="flex items-center gap-2"><ClipboardList className="h-5 w-5" />Make Order to Procurement</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="grid sm:grid-cols-2 gap-3">
-            <div className="sm:col-span-2"><Label className="text-xs">Item name</Label><Input value={q} onChange={e => setQ(e.target.value)} placeholder="Start typing an item name…" /></div>
+            <div className="sm:col-span-2 relative">
+              <Label className="text-xs">Item name</Label>
+              <Input value={q} onChange={e => { setQ(e.target.value); setSel(null); }} placeholder="Start typing an item name…" />
+              {matches.length > 0 && !sel && (
+                <div className="absolute z-20 left-0 right-0 mt-1 bg-popover border rounded-md shadow-lg max-h-56 overflow-auto">
+                  {matches.map(d => (
+                    <button type="button" key={d.id} onClick={() => { setSel(d); setQ(d.name); }}
+                      className="w-full text-left px-3 py-1.5 hover:bg-accent text-sm flex justify-between gap-2">
+                      <span>{d.name} <span className="text-muted-foreground">({d.unit})</span></span>
+                      <span className="text-xs text-muted-foreground">{d.category ?? "—"} · {d.department ?? "—"} · {d.measurement_per_item ?? "—"}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <div>
               <Label className="text-xs">Category</Label>
               <select className="w-full h-9 rounded-md border bg-background px-2 text-sm" value={cat} onChange={e => setCat(e.target.value)}>
@@ -1025,47 +1001,26 @@ function MakeOrderPanel() {
                 {departments.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
-            <div className="sm:col-span-2">
-              <Label className="text-xs">Measurement per item</Label>
-              <select className="w-full h-9 rounded-md border bg-background px-2 text-sm" value={meas} onChange={e => setMeas(e.target.value)}>
-                <option value="">Any measurement (e.g. 500 gm, 1 L)</option>
-                {measures.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+            <div><Label className="text-xs">Measurement per item</Label><Input value={meas} onChange={e => setMeas(e.target.value)} placeholder="e.g. 500 mg, 1 L" /></div>
+            <div className="flex items-end gap-2">
+              <div className="flex-1"><Label className="text-xs">Quantity requested</Label><Input type="number" min="1" value={qty} onChange={e => setQty(e.target.value)} placeholder="qty" /></div>
+              <Button type="button" onClick={add}><Plus className="h-4 w-4 mr-1" />Add</Button>
             </div>
-          </div>
-
-          <div className="border rounded-md max-h-64 overflow-auto">
-            <Table>
-              <TableHeader><TableRow><TableHead>Item</TableHead><TableHead>Category</TableHead><TableHead>Dept</TableHead><TableHead>Measure</TableHead><TableHead className="text-right">In store</TableHead><TableHead></TableHead></TableRow></TableHeader>
-              <TableBody>
-                {matches.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No matching items</TableCell></TableRow>}
-                {matches.map(d => (
-                  <TableRow key={d.id}>
-                    <TableCell className="font-medium">{d.name} <span className="text-xs text-muted-foreground">({d.unit})</span></TableCell>
-                    <TableCell className="text-xs">{d.category ?? "—"}</TableCell>
-                    <TableCell className="text-xs">{d.department ?? "—"}</TableCell>
-                    <TableCell className="text-xs">{d.measurement_per_item ?? "—"}</TableCell>
-                    <TableCell className="text-right">{d.proc_stock}</TableCell>
-                    <TableCell className="text-right"><Button size="sm" variant="secondary" onClick={() => addLine(d)}><Plus className="h-4 w-4" /></Button></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
           </div>
 
           <div className="border rounded-md">
             <Table>
-              <TableHeader><TableRow><TableHead>On this order</TableHead><TableHead className="w-28">Qty</TableHead><TableHead></TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead className="py-1">On this order</TableHead><TableHead className="py-1 w-28">Qty</TableHead><TableHead className="py-1"></TableHead></TableRow></TableHeader>
               <TableBody>
                 {lines.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">No items added</TableCell></TableRow>}
                 {lines.map((l, i) => (
                   <TableRow key={l.drug_id}>
-                    <TableCell className="font-medium">{l.drug_name}</TableCell>
-                    <TableCell>
+                    <TableCell className="py-1 font-medium">{l.drug_name}</TableCell>
+                    <TableCell className="py-1">
                       <Input type="number" min="1" className="h-8" value={l.quantity}
                         onChange={e => setLines(prev => prev.map((x, ix) => ix === i ? { ...x, quantity: Number(e.target.value) || 1 } : x))} />
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="py-1 text-right">
                       <Button size="sm" variant="ghost" onClick={() => setLines(prev => prev.filter((_, ix) => ix !== i))}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </TableCell>
                   </TableRow>
@@ -1075,61 +1030,109 @@ function MakeOrderPanel() {
           </div>
 
           <div><Label className="text-xs">Note (optional)</Label><Textarea rows={2} value={note} onChange={e => setNote(e.target.value)} /></div>
-          <Button className="w-full" disabled={busy} onClick={submit}>{busy ? "Saving…" : "Save order (await approval at Procurement)"}</Button>
+          <Button className="w-full" disabled={busy} onClick={submit}>{busy ? "Submitting…" : "Submit to Procurement for approval"}</Button>
         </CardContent>
       </Card>
 
-      <div className="space-y-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-3 flex-wrap">
-            <CardTitle>Pharmacy Store</CardTitle>
-            <Button variant="outline" size="sm" onClick={() => printElement(printRef.current, "Pharmacy Store & Orders")}>
-              <Printer className="h-4 w-4 mr-1" />Print / Download
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <div ref={printRef}>
-              <h1>Pharmacy Store &amp; Stock Orders</h1>
-              <Table>
-                <TableHeader><TableRow><TableHead>Item</TableHead><TableHead className="text-right">Quantity held</TableHead></TableRow></TableHeader>
-                <TableBody>
-                  {store.length === 0 && <TableRow><TableCell colSpan={2} className="text-center text-muted-foreground">The pharmacy store is empty. Make an order to Procurement.</TableCell></TableRow>}
-                  {store.map(s => (
-                    <TableRow key={s.drug_id}>
-                      <TableCell className="font-medium">{s.drugs?.name ?? s.drug_id}</TableCell>
-                      <TableCell className={`text-right font-semibold ${Number(s.quantity) === 0 ? "text-destructive" : ""}`}>{s.quantity}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <SignOffBlock />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle>My Stock Orders</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            {orders.length === 0 && <p className="text-muted-foreground text-center py-4">No stock orders raised yet.</p>}
-            {orders.map(o => (
-              <div key={o.id} className="border rounded-md p-3 space-y-2">
-                <div className="flex justify-between items-center gap-2">
-                  <div className="text-sm font-medium">#{o.id.slice(0, 8)} <span className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleString()}</span></div>
-                  <Badge variant={o.status === "approved" ? "default" : o.status === "rejected" ? "destructive" : "outline"}>{o.status}</Badge>
-                </div>
-                <div className="text-xs space-y-1">
-                  {(oItems[o.id] ?? []).map(it => (
-                    <div key={it.id} className="flex justify-between">
-                      <span>{it.drug_name}</span>
-                      <span className="text-muted-foreground">req {it.quantity}{it.approved_qty != null ? ` · approved ${it.approved_qty}` : ""}{it.reject_reason ? ` · ${it.reject_reason}` : ""}</span>
-                    </div>
-                  ))}
-                </div>
+      <Card>
+        <CardHeader><CardTitle>My Stock Orders</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          {orders.length === 0 && <p className="text-muted-foreground text-center py-4">No stock orders raised yet.</p>}
+          {orders.map(o => (
+            <div key={o.id} className="border rounded-md p-3 space-y-2">
+              <div className="flex justify-between items-center gap-2">
+                <div className="text-sm font-medium">#{o.id.slice(0, 8)} <span className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleString()}</span></div>
+                <Badge variant={o.status === "approved" ? "default" : o.status === "rejected" ? "destructive" : "outline"}>{o.status}</Badge>
               </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
+              <div className="text-xs space-y-1">
+                {(oItems[o.id] ?? []).map(it => (
+                  <div key={it.id} className="flex justify-between">
+                    <span>{it.drug_name}</span>
+                    <span className="text-muted-foreground">req {it.quantity}{it.approved_qty != null ? ` · approved ${it.approved_qty}` : ""}{it.reject_reason ? ` · ${it.reject_reason}` : ""}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
     </div>
+  );
+}
+
+// =============== PHARMACY STORE ===============
+
+type StoreLine = {
+  key: string; name: string; category: string | null; department: string | null;
+  manufacture_date: string | null; expiry_date: string | null; quantity: number; status: string;
+};
+
+function PharmacyStorePanel() {
+  const [rows, setRows] = useState<StoreLine[]>([]);
+
+  const load = async () => {
+    const { data: ps } = await supabase.from("pharmacy_stock")
+      .select("drug_id, quantity, drugs(name, category, department, manufacture_date, expiry_date)")
+      .order("quantity", { ascending: false });
+    const approved: StoreLine[] = (((ps as unknown) as {
+      drug_id: string; quantity: number;
+      drugs: { name: string; category: string | null; department: string | null; manufacture_date: string | null; expiry_date: string | null } | null;
+    }[]) ?? []).map(r => ({
+      key: `a-${r.drug_id}`, name: r.drugs?.name ?? r.drug_id, category: r.drugs?.category ?? null,
+      department: r.drugs?.department ?? null, manufacture_date: r.drugs?.manufacture_date ?? null,
+      expiry_date: r.drugs?.expiry_date ?? null, quantity: Number(r.quantity), status: "approved",
+    }));
+
+    const { data: pend } = await supabase.from("stock_order_items")
+      .select("id, quantity, status, drug_name, drugs(category, department, manufacture_date, expiry_date)")
+      .eq("status", "pending");
+    const pending: StoreLine[] = (((pend as unknown) as {
+      id: string; quantity: number; status: string; drug_name: string;
+      drugs: { category: string | null; department: string | null; manufacture_date: string | null; expiry_date: string | null } | null;
+    }[]) ?? []).map(r => ({
+      key: `p-${r.id}`, name: r.drug_name, category: r.drugs?.category ?? null,
+      department: r.drugs?.department ?? null, manufacture_date: r.drugs?.manufacture_date ?? null,
+      expiry_date: r.drugs?.expiry_date ?? null, quantity: Number(r.quantity), status: "pending",
+    }));
+
+    setRows([...pending, ...approved]);
+  };
+  useEffect(() => { load(); }, []);
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>Pharmacy Store ({rows.length})</CardTitle></CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="py-1">Item name</TableHead>
+              <TableHead className="py-1">Category</TableHead>
+              <TableHead className="py-1">Department</TableHead>
+              <TableHead className="py-1">Manufactured</TableHead>
+              <TableHead className="py-1">Expiry</TableHead>
+              <TableHead className="py-1 text-right">Quantity</TableHead>
+              <TableHead className="py-1">Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.length === 0 && (
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">The pharmacy store is empty. Make an order to Procurement.</TableCell></TableRow>
+            )}
+            {rows.map(r => (
+              <TableRow key={r.key} className="text-sm">
+                <TableCell className="py-1 font-medium">{r.name}</TableCell>
+                <TableCell className="py-1">{r.category ?? "—"}</TableCell>
+                <TableCell className="py-1">{r.department ?? "—"}</TableCell>
+                <TableCell className="py-1">{r.manufacture_date ?? "—"}</TableCell>
+                <TableCell className="py-1">{r.expiry_date ?? "—"}</TableCell>
+                <TableCell className={`py-1 text-right font-semibold ${r.quantity === 0 ? "text-destructive" : ""}`}>{r.quantity}</TableCell>
+                <TableCell className="py-1 capitalize">{r.status}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }

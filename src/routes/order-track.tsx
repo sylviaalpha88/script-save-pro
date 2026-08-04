@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
-import { SignOffBlock } from "@/components/SignOff";
 import { printElement } from "@/lib/print";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -263,7 +262,6 @@ function OrderTrackPage() {
                   ))}
                 </TableBody>
               </Table>
-              <SignOffBlock />
             </div>
           </CardContent>
         </Card>

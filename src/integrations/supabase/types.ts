@@ -674,6 +674,47 @@ export type Database = {
           },
         ]
       }
+      services: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          pharmacy_id: string | null
+          selling_price_retail: number
+          selling_price_wholesale: number
+          unit: Database["public"]["Enums"]["drug_unit"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          pharmacy_id?: string | null
+          selling_price_retail?: number
+          selling_price_wholesale?: number
+          unit?: Database["public"]["Enums"]["drug_unit"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          pharmacy_id?: string | null
+          selling_price_retail?: number
+          selling_price_wholesale?: number
+          unit?: Database["public"]["Enums"]["drug_unit"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "services_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_content: {
         Row: {
           body: string
