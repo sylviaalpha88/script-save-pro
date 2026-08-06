@@ -967,7 +967,7 @@ function MakeOrderPanel() {
   };
 
   return (
-    <div className="grid lg:grid-cols-2 gap-6">
+    <div className="max-w-3xl">
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><ClipboardList className="h-5 w-5" />Make Order to Procurement</CardTitle></CardHeader>
         <CardContent className="space-y-4">
@@ -1033,31 +1033,9 @@ function MakeOrderPanel() {
           <Button className="w-full" disabled={busy} onClick={submit}>{busy ? "Submitting…" : "Submit to Procurement for approval"}</Button>
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader><CardTitle>My Stock Orders</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          {orders.length === 0 && <p className="text-muted-foreground text-center py-4">No stock orders raised yet.</p>}
-          {orders.map(o => (
-            <div key={o.id} className="border rounded-md p-3 space-y-2">
-              <div className="flex justify-between items-center gap-2">
-                <div className="text-sm font-medium">#{o.id.slice(0, 8)} <span className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleString()}</span></div>
-                <Badge variant={o.status === "approved" ? "default" : o.status === "rejected" ? "destructive" : "outline"}>{o.status}</Badge>
-              </div>
-              <div className="text-xs space-y-1">
-                {(oItems[o.id] ?? []).map(it => (
-                  <div key={it.id} className="flex justify-between">
-                    <span>{it.drug_name}</span>
-                    <span className="text-muted-foreground">req {it.quantity}{it.approved_qty != null ? ` · approved ${it.approved_qty}` : ""}{it.reject_reason ? ` · ${it.reject_reason}` : ""}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
     </div>
   );
+
 }
 
 // =============== PHARMACY STORE ===============
