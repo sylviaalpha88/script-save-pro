@@ -881,14 +881,10 @@ function PaymentReceive({ total, onPay }: { total: number; onPay: (method: strin
 // =============== MAKE ORDER (pharmacy -> procurement) ===============
 
 type ProcDrug = Drug & { proc_stock: number };
-type MyOrder = { id: string; status: string; note: string | null; created_at: string };
-type MyOrderItem = { id: string; order_id: string; drug_name: string; quantity: number; approved_qty: number | null; status: string; reject_reason: string | null };
 
 function MakeOrderPanel() {
   const { profile } = useAuth();
   const [all, setAll] = useState<ProcDrug[]>([]);
-  const [orders, setOrders] = useState<MyOrder[]>([]);
-  const [oItems, setOItems] = useState<Record<string, MyOrderItem[]>>({});
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("");
   const [dept, setDept] = useState("");
@@ -902,18 +898,8 @@ function MakeOrderPanel() {
   const load = async () => {
     const { data: ds } = await supabase.from("drugs").select(DRUG_COLS).order("name");
     setAll(((ds as Drug[]) ?? []).map(d => ({ ...d, proc_stock: Number(d.stock_quantity) })));
-    const { data: os } = await supabase.from("stock_orders")
-      .select("id, status, note, created_at").order("created_at", { ascending: false }).limit(50);
-    setOrders((os as MyOrder[]) ?? []);
-    const ids = ((os as MyOrder[]) ?? []).map(o => o.id);
-    if (ids.length) {
-      const { data: its } = await supabase.from("stock_order_items")
-        .select("id, order_id, drug_name, quantity, approved_qty, status, reject_reason").in("order_id", ids);
-      const g: Record<string, MyOrderItem[]> = {};
-      ((its as MyOrderItem[]) ?? []).forEach(it => { (g[it.order_id] ||= []).push(it); });
-      setOItems(g);
-    } else setOItems({});
   };
+
   useEffect(() => { load(); }, []);
 
   const uniq = (vals: (string | null)[]) => [...new Set(vals.filter(Boolean) as string[])].sort();
