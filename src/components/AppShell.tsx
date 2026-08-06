@@ -1,7 +1,11 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { useSiteBranding } from "@/lib/site-branding";
+import { supabase } from "@/integrations/supabase/client";
+import { setPrintBrand } from "@/lib/print";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import QRCode from "qrcode";
 import {
   Pill, LogOut, LayoutGrid, Package, Calculator, Truck, Globe, UserCog, MessageSquare, Briefcase, Tags,
 } from "lucide-react";
@@ -38,12 +42,50 @@ export function AppShell({
     if (!loading && !profile) navigate({ to: "/auth" });
   }, [loading, profile, navigate]);
 
+  // Brand every printed / downloaded PDF: logo left, pharmacy details right, QR at the bottom.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      let name = branding.name;
+      let logoUrl: string | null = branding.logoUrl ?? null;
+      const lines: string[] = [];
+      if (profile?.pharmacy_id) {
+        const { data } = await supabase
+          .from("pharmacies")
+          .select("name, phone, email, address, location, logo_path")
+          .eq("id", profile.pharmacy_id)
+          .maybeSingle();
+        if (data) {
+          name = data.name || name;
+          if (data.phone) lines.push(`Tel: ${data.phone}`);
+          if (data.email) lines.push(data.email);
+          if (data.address) lines.push(data.address);
+          if (data.location) lines.push(data.location);
+          if (data.logo_path) {
+            const { data: signed } = await supabase.storage
+              .from("pharmacy-logos")
+              .createSignedUrl(data.logo_path, 3600);
+            if (signed?.signedUrl) logoUrl = signed.signedUrl;
+          }
+        }
+      }
+      let qrDataUrl: string | null = null;
+      try {
+        qrDataUrl = await QRCode.toDataURL(window.location.href, { margin: 1, width: 180 });
+      } catch { /* QR is optional */ }
+      if (!cancelled) setPrintBrand({ name, logoUrl, lines, qrDataUrl });
+    })();
+    return () => { cancelled = true; };
+  }, [profile?.pharmacy_id, branding.name, branding.logoUrl]);
+
   if (loading || !profile) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
   }
 
   const mods = allowedModules(profile);
-  const tiles = TILES.filter((t) => mods.includes(t.module));
+
+  const tileClass = (tone: string) =>
+    `flex items-center gap-3 rounded-xl border px-5 py-3 text-base font-bold shadow-sm transition hover:-translate-y-0.5 data-[status=active]:ring-2 data-[status=active]:ring-primary/40 ${tone}`;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-50 via-blue-50/60 to-white">
@@ -74,16 +116,32 @@ export function AppShell({
         </div>
         <nav className="border-t border-sky-100 bg-white/70">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap gap-3">
-            {tiles.map((t) => (
-              <Link
-                key={t.to}
-                to={t.to}
-                className={`flex items-center gap-3 rounded-xl border px-5 py-3 text-base font-bold shadow-sm transition hover:-translate-y-0.5 data-[status=active]:ring-2 data-[status=active]:ring-primary/40 ${t.tone}`}
-              >
-                {t.icon}
-                <span className="whitespace-nowrap">{t.label}</span>
-              </Link>
-            ))}
+            {TILES.map((t) => {
+              const allowed = mods.includes(t.module);
+              if (allowed) {
+                return (
+                  <Link key={t.to} to={t.to} className={tileClass(t.tone)}>
+                    {t.icon}
+                    <span className="whitespace-nowrap">{t.label}</span>
+                  </Link>
+                );
+              }
+              return (
+                <button
+                  key={t.to}
+                  type="button"
+                  onClick={() =>
+                    toast.error("You do not have permission to access this page", {
+                      className: "!bg-destructive !text-destructive-foreground !border-destructive",
+                    })
+                  }
+                  className={`${tileClass(t.tone)} opacity-70`}
+                >
+                  {t.icon}
+                  <span className="whitespace-nowrap">{t.label}</span>
+                </button>
+              );
+            })}
           </div>
         </nav>
       </header>

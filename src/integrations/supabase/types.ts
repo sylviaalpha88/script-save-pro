@@ -719,6 +719,7 @@ export type Database = {
         Row: {
           body: string
           image_url: string | null
+          images: string[]
           section: string
           title: string
           updated_at: string
@@ -727,6 +728,7 @@ export type Database = {
         Insert: {
           body?: string
           image_url?: string | null
+          images?: string[]
           section: string
           title?: string
           updated_at?: string
@@ -735,10 +737,35 @@ export type Database = {
         Update: {
           body?: string
           image_url?: string | null
+          images?: string[]
           section?: string
           title?: string
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      site_downloads: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          file_path: string
+          id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          file_path: string
+          id?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          file_path?: string
+          id?: string
+          title?: string
         }
         Relationships: []
       }
@@ -779,6 +806,74 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "sms_settings_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_order_archive: {
+        Row: {
+          avg_stock: number
+          category: string | null
+          department: string | null
+          drug_id: string | null
+          drug_name: string
+          id: string
+          level: string | null
+          max_stock: number
+          measurement_per_item: string | null
+          min_stock: number
+          moved_at: string
+          moved_by: string | null
+          order_qty: number
+          pharmacy_id: string | null
+          remaining: number
+          sku: string | null
+          supplier_name: string | null
+        }
+        Insert: {
+          avg_stock?: number
+          category?: string | null
+          department?: string | null
+          drug_id?: string | null
+          drug_name: string
+          id?: string
+          level?: string | null
+          max_stock?: number
+          measurement_per_item?: string | null
+          min_stock?: number
+          moved_at?: string
+          moved_by?: string | null
+          order_qty?: number
+          pharmacy_id?: string | null
+          remaining?: number
+          sku?: string | null
+          supplier_name?: string | null
+        }
+        Update: {
+          avg_stock?: number
+          category?: string | null
+          department?: string | null
+          drug_id?: string | null
+          drug_name?: string
+          id?: string
+          level?: string | null
+          max_stock?: number
+          measurement_per_item?: string | null
+          min_stock?: number
+          moved_at?: string
+          moved_by?: string | null
+          order_qty?: number
+          pharmacy_id?: string | null
+          remaining?: number
+          sku?: string | null
+          supplier_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_order_archive_pharmacy_id_fkey"
             columns: ["pharmacy_id"]
             isOneToOne: false
             referencedRelation: "pharmacies"
