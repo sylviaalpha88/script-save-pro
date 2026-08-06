@@ -143,7 +143,7 @@ function Index() {
           )}
           <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
 
-          <div className="absolute top-0 left-0 right-0"><NavBar dark /></div>
+          <div className="absolute top-0 left-0 right-0 z-30"><NavBar dark /></div>
 
           <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 text-center">
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight drop-shadow-lg">
