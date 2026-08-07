@@ -743,7 +743,8 @@ function NewInventoryForm({ onSaved }: { onSaved: () => void }) {
       toast.error("The item / drug name must correspond with the service name."); return;
     }
     const retail = Number(svc.selling_price_retail || 0);
-    const { error } = await supabase.from("drugs").insert({
+    const addQty = Number(f.qty_received || 0);
+    const payload = {
       pharmacy_id: profile.pharmacy_id,
       name: f.name,
       sku: f.sku || null,
@@ -766,8 +767,7 @@ function NewInventoryForm({ onSaved }: { onSaved: () => void }) {
       freight_cost: Number(f.freight_cost || 0),
       computed_total: computedTotal,
       qty_ordered: Number(f.qty_ordered || 0),
-      qty_received: Number(f.qty_received || 0),
-      stock_quantity: Number(f.qty_received || 0),
+      qty_received: addQty,
       batch_number: f.batch_number || null,
       manufacture_date: f.manufacture_date || null,
       expiry_date: f.expiry_date || null,
@@ -778,11 +778,35 @@ function NewInventoryForm({ onSaved }: { onSaved: () => void }) {
       selling_price_retail: retail,
       selling_price_wholesale: Number(svc.selling_price_wholesale || 0),
       wholesale_min_qty: Number(f.wholesale_min_qty || 10),
-    });
+    };
+
+    // Same item name already on the store → top up its quantity instead of creating
+    // a second row. All other details are refreshed from this new delivery.
+    const { data: existing } = await supabase
+      .from("drugs")
+      .select("id, stock_quantity")
+      .eq("pharmacy_id", profile.pharmacy_id)
+      .ilike("name", f.name.trim())
+      .maybeSingle();
+
+    if (existing) {
+      const { error } = await supabase.from("drugs").update({
+        ...payload,
+        stock_quantity: Number(existing.stock_quantity || 0) + addQty,
+        updated_at: new Date().toISOString(),
+      }).eq("id", existing.id);
+      if (error) { toast.error(error.message); return; }
+      toast.success(`${addQty} added on top of the existing stock of ${f.name}`);
+      onSaved();
+      return;
+    }
+
+    const { error } = await supabase.from("drugs").insert({ ...payload, stock_quantity: addQty });
     if (error) { toast.error(error.message); return; }
     toast.success("New inventory item created");
     onSaved();
   };
+
 
   return (
     <form onSubmit={submit} className="space-y-6">
