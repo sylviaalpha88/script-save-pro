@@ -464,7 +464,7 @@ function PharmacyRequestsPanel() {
                           onCheckedChange={() => setSel(p => p.includes(o.id) ? p.filter(x => x !== o.id) : [...p, o.id])} />
                       </span>
                       <div>
-                        <div className="font-semibold">#{o.id.slice(0, 8)} · {o.requested_by_name ?? "Pharmacy"}</div>
+                        <div className="font-semibold">{o.requested_by_name || "Pharmacy"}</div>
                         <div className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleString()}{o.note ? ` · ${o.note}` : ""}</div>
                       </div>
                     </div>
