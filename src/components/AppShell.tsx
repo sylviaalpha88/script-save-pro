@@ -5,12 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { setPrintBrand } from "@/lib/print";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import QRCode from "qrcode";
 import {
   Pill, LogOut, LayoutGrid, Package, Calculator, Truck, Globe, UserCog, MessageSquare, Briefcase, Tags,
 } from "lucide-react";
 import { allowedModules, type ModuleKey } from "@/lib/access";
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useState } from "react";
+
 
 interface NavItem { to: string; label: string; }
 
