@@ -37,6 +37,8 @@ export function AppShell({
   const { profile, signOut, loading } = useAuth();
   const branding = useSiteBranding();
   const navigate = useNavigate();
+  const [pharmName, setPharmName] = useState<string | null>(null);
+  const [pharmLogo, setPharmLogo] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !profile) navigate({ to: "/auth" });
@@ -52,31 +54,45 @@ export function AppShell({
       if (profile?.pharmacy_id) {
         const { data } = await supabase
           .from("pharmacies")
-          .select("name, phone, email, address, location, logo_path")
+          .select("name, phone, email, address, postal_address, location, logo_path")
           .eq("id", profile.pharmacy_id)
           .maybeSingle();
         if (data) {
           name = data.name || name;
-          if (data.phone) lines.push(`Tel: ${data.phone}`);
-          if (data.email) lines.push(data.email);
+          if (data.postal_address) lines.push(`P.O. Box ${data.postal_address}`);
           if (data.address) lines.push(data.address);
           if (data.location) lines.push(data.location);
+          if (data.phone) lines.push(`Tel: ${data.phone}`);
+          if (data.email) lines.push(data.email);
           if (data.logo_path) {
             const { data: signed } = await supabase.storage
               .from("pharmacy-logos")
               .createSignedUrl(data.logo_path, 3600);
-            if (signed?.signedUrl) logoUrl = signed.signedUrl;
+            if (signed?.signedUrl) {
+              logoUrl = signed.signedUrl;
+              // Inline the logo so it survives inside printed / scan-to-download copies.
+              try {
+                const blob = await (await fetch(signed.signedUrl)).blob();
+                logoUrl = await new Promise<string>((resolve, reject) => {
+                  const fr = new FileReader();
+                  fr.onload = () => resolve(String(fr.result));
+                  fr.onerror = reject;
+                  fr.readAsDataURL(blob);
+                });
+              } catch { /* keep the signed url */ }
+            }
           }
         }
       }
-      let qrDataUrl: string | null = null;
-      try {
-        qrDataUrl = await QRCode.toDataURL(window.location.href, { margin: 1, width: 180 });
-      } catch { /* QR is optional */ }
-      if (!cancelled) setPrintBrand({ name, logoUrl, lines, qrDataUrl });
+      if (!cancelled) {
+        setPharmName(name || null);
+        setPharmLogo(logoUrl);
+        setPrintBrand({ name, logoUrl, lines, pharmacyId: profile?.pharmacy_id ?? null });
+      }
     })();
     return () => { cancelled = true; };
   }, [profile?.pharmacy_id, branding.name, branding.logoUrl]);
+
 
   if (loading || !profile) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
