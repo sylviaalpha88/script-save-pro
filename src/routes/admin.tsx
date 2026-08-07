@@ -528,7 +528,7 @@ function ReconciliationPanel() {
 }
 
 // =============== Pharmacy Info Panel ===============
-type PharmacyRow = { id: string; name: string; phone: string | null; email: string | null; address: string | null; location: string | null; logo_path: string | null };
+type PharmacyRow = { id: string; name: string; phone: string | null; email: string | null; address: string | null; postal_address: string | null; location: string | null; logo_path: string | null };
 
 function PharmacyInfoPanel() {
   const { profile } = useAuth();
