@@ -557,8 +557,10 @@ function PharmacyInfoPanel() {
     e.preventDefault();
     setBusy(true);
     const { error } = await supabase.from("pharmacies").update({
-      name: row.name, phone: row.phone, email: row.email, address: row.address, location: row.location,
+      name: row.name, phone: row.phone, email: row.email, address: row.address,
+      postal_address: row.postal_address, location: row.location,
     }).eq("id", row.id);
+
     setBusy(false);
     if (error) toast.error(error.message); else toast.success("Pharmacy info saved");
   };
