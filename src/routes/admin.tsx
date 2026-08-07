@@ -539,8 +539,9 @@ function PharmacyInfoPanel() {
   const load = async () => {
     if (!profile?.pharmacy_id) return;
     const { data } = await supabase.from("pharmacies")
-      .select("id, name, phone, email, address, location, logo_path")
+      .select("id, name, phone, email, address, postal_address, location, logo_path")
       .eq("id", profile.pharmacy_id).maybeSingle();
+
     setRow(data as PharmacyRow);
     if (data?.logo_path) {
       const { data: signed } = await supabase.storage.from("pharmacy-logos").createSignedUrl(data.logo_path, 3600);
