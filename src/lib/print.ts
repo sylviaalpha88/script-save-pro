@@ -1,7 +1,11 @@
+import { supabase } from "@/integrations/supabase/client";
+import QRCode from "qrcode";
+
 export type PrintBrand = {
   name?: string;
   logoUrl?: string | null;
   lines?: string[];
+  pharmacyId?: string | null;
   qrDataUrl?: string | null;
 };
 
@@ -26,21 +30,15 @@ function headerHtml() {
   return `<div class="brandbar">${logo}<div class="binfo">${info}</div></div>`;
 }
 
-function footerHtml() {
-  if (!BRAND.qrDataUrl) return "";
+function footerHtml(qr: string | null) {
+  if (!qr) return "";
   return `<div class="qrbox">
-    <img src="${BRAND.qrDataUrl}" alt="" />
+    <img src="${qr}" alt="" />
     <div class="qrlabel">QR SCAN — scan to download this PDF</div>
   </div>`;
 }
 
-/** Open a print window containing the HTML of the given element. */
-export function printElement(el: HTMLElement | null, title: string) {
-  if (!el) return;
-  const w = window.open("", "_blank", "width=1000,height=800");
-  if (!w) return;
-  w.document.write(`<!doctype html><html><head><title>${esc(title)}</title>
-<style>
+const PRINT_CSS = `
   *{box-sizing:border-box}
   body{font-family:ui-sans-serif,system-ui,Arial,sans-serif;padding:24px;color:#111}
   h1{font-size:18px;margin:0 0 4px}
@@ -60,10 +58,59 @@ export function printElement(el: HTMLElement | null, title: string) {
   .qrbox img{height:88px;width:88px}
   .qrlabel{font-size:10px;color:#555;margin-top:2px;letter-spacing:.05em}
   @page{margin:14mm}
-</style></head><body>${headerHtml()}${el.innerHTML}${footerHtml()}</body></html>`);
+`;
+
+export const PRINT_DOC_CSS = PRINT_CSS;
+
+/**
+ * Save a snapshot of the document so the QR code on the printed page can be
+ * scanned by anyone (no login) and download that exact PDF.
+ */
+async function publishDoc(title: string, bodyHtml: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from("printed_docs")
+      .insert({
+        title,
+        html: bodyHtml,
+        pharmacy_id: BRAND.pharmacyId ?? null,
+        brand: { name: BRAND.name ?? null, logoUrl: BRAND.logoUrl ?? null, lines: BRAND.lines ?? [] },
+      })
+      .select("id")
+      .single();
+    if (error || !data) return null;
+    return data.id as string;
+  } catch {
+    return null;
+  }
+}
+
+/** Open a print window containing the HTML of the given element. */
+export async function printElement(el: HTMLElement | null, title: string) {
+  if (!el) return;
+  const w = window.open("", "_blank", "width=1000,height=800");
+  if (!w) return;
+  w.document.write(`<!doctype html><html><head><title>${esc(title)}</title>
+<style>${PRINT_CSS}</style></head><body><p style="font:12px system-ui;color:#666">Preparing document…</p></body></html>`);
+  w.document.close();
+
+  const bodyHtml = el.innerHTML;
+  const docId = await publishDoc(title, bodyHtml);
+
+  let qr: string | null = null;
+  try {
+    const url = docId
+      ? `${window.location.origin}/doc/${docId}?auto=1`
+      : window.location.href;
+    qr = await QRCode.toDataURL(url, { margin: 1, width: 180 });
+  } catch { /* QR is optional */ }
+
+  w.document.open();
+  w.document.write(`<!doctype html><html><head><title>${esc(title)}</title>
+<style>${PRINT_CSS}</style></head><body>${headerHtml()}${bodyHtml}${footerHtml(qr)}</body></html>`);
   w.document.close();
   w.focus();
-  setTimeout(() => w.print(), 300);
+  setTimeout(() => w.print(), 400);
 }
 
 /** The four-stage sign-off block used at the bottom of printed reports. */
