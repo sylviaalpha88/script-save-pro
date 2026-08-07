@@ -24,7 +24,7 @@ export const getBuyerInvoicePublic = createServerFn({ method: "GET" })
       .select("drug_name, approved_qty, requested_qty, unit_price, subtotal, status")
       .eq("order_id", data.orderId).eq("status", "approved");
     const { data: pharmacy } = await supabaseAdmin.from("pharmacies")
-      .select("name, phone, email, address, location, logo_path")
+      .select("name, phone, email, address, postal_address, location, logo_path")
       .eq("id", order.pharmacy_id).maybeSingle();
     let logoUrl: string | null = null;
     if (pharmacy?.logo_path) {

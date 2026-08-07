@@ -25,6 +25,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AccountantRouteImport } from './routes/accountant'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InvoiceIdRouteImport } from './routes/invoice.$id'
+import { Route as DocIdRouteImport } from './routes/doc.$id'
 import { Route as BuyerInvoiceIdRouteImport } from './routes/buyer-invoice.$id'
 
 const VacancyRoute = VacancyRouteImport.update({
@@ -107,6 +108,11 @@ const InvoiceIdRoute = InvoiceIdRouteImport.update({
   path: '/invoice/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DocIdRoute = DocIdRouteImport.update({
+  id: '/doc/$id',
+  path: '/doc/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BuyerInvoiceIdRoute = BuyerInvoiceIdRouteImport.update({
   id: '/buyer-invoice/$id',
   path: '/buyer-invoice/$id',
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/vacancy': typeof VacancyRoute
   '/buyer-invoice/$id': typeof BuyerInvoiceIdRoute
+  '/doc/$id': typeof DocIdRoute
   '/invoice/$id': typeof InvoiceIdRoute
 }
 export interface FileRoutesByTo {
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/vacancy': typeof VacancyRoute
   '/buyer-invoice/$id': typeof BuyerInvoiceIdRoute
+  '/doc/$id': typeof DocIdRoute
   '/invoice/$id': typeof InvoiceIdRoute
 }
 export interface FileRoutesById {
@@ -169,6 +177,7 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/vacancy': typeof VacancyRoute
   '/buyer-invoice/$id': typeof BuyerInvoiceIdRoute
+  '/doc/$id': typeof DocIdRoute
   '/invoice/$id': typeof InvoiceIdRoute
 }
 export interface FileRouteTypes {
@@ -190,6 +199,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/vacancy'
     | '/buyer-invoice/$id'
+    | '/doc/$id'
     | '/invoice/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -209,6 +219,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/vacancy'
     | '/buyer-invoice/$id'
+    | '/doc/$id'
     | '/invoice/$id'
   id:
     | '__root__'
@@ -228,6 +239,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/vacancy'
     | '/buyer-invoice/$id'
+    | '/doc/$id'
     | '/invoice/$id'
   fileRoutesById: FileRoutesById
 }
@@ -248,6 +260,7 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   VacancyRoute: typeof VacancyRoute
   BuyerInvoiceIdRoute: typeof BuyerInvoiceIdRoute
+  DocIdRoute: typeof DocIdRoute
   InvoiceIdRoute: typeof InvoiceIdRoute
 }
 
@@ -365,6 +378,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvoiceIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/doc/$id': {
+      id: '/doc/$id'
+      path: '/doc/$id'
+      fullPath: '/doc/$id'
+      preLoaderRoute: typeof DocIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/buyer-invoice/$id': {
       id: '/buyer-invoice/$id'
       path: '/buyer-invoice/$id'
@@ -392,6 +412,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   VacancyRoute: VacancyRoute,
   BuyerInvoiceIdRoute: BuyerInvoiceIdRoute,
+  DocIdRoute: DocIdRoute,
   InvoiceIdRoute: InvoiceIdRoute,
 }
 export const routeTree = rootRouteImport

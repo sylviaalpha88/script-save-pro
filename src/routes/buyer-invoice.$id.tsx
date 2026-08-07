@@ -18,7 +18,7 @@ type Order = {
   wholesale_buyers: { name: string; phone: string | null; email: string | null; id_number: string | null; location: string | null } | null;
 };
 type Item = { drug_name: string; approved_qty: number | null; requested_qty: number; unit_price: number; subtotal: number; status: string };
-type Pharmacy = { name: string; phone: string | null; email: string | null; address: string | null; location: string | null; logo_path: string | null };
+type Pharmacy = { name: string; phone: string | null; email: string | null; address: string | null; postal_address?: string | null; location: string | null; logo_path: string | null };
 
 function BuyerInvoicePage() {
   const { id } = Route.useParams();
@@ -76,6 +76,7 @@ function BuyerInvoicePage() {
       </div>
       <div className="text-right text-xs leading-relaxed">
         <div className="text-base font-bold">{pharmacy?.name ?? "LEMSA PHARMACY"}</div>
+        {pharmacy?.postal_address && <div>P.O. Box {pharmacy.postal_address}</div>}
         {pharmacy?.address && <div>{pharmacy.address}</div>}
         {pharmacy?.location && <div>{pharmacy.location}</div>}
         {pharmacy?.phone && <div>Tel: {pharmacy.phone}</div>}
@@ -128,6 +129,7 @@ function BuyerInvoicePage() {
         </div>
         <div style={{ textAlign: "right", lineHeight: 1.35 }}>
           <div style={{ fontWeight: 700 }}>{pharmacy?.name ?? "LEMSA PHARMACY"}</div>
+          {pharmacy?.postal_address && <div>P.O. Box {pharmacy.postal_address}</div>}
           {pharmacy?.address && <div>{pharmacy.address}</div>}
           {pharmacy?.location && <div>{pharmacy.location}</div>}
           {pharmacy?.phone && <div>Tel: {pharmacy.phone}</div>}

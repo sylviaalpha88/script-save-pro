@@ -456,6 +456,7 @@ export type Database = {
           logo_path: string | null
           name: string
           phone: string | null
+          postal_address: string | null
         }
         Insert: {
           address?: string | null
@@ -466,6 +467,7 @@ export type Database = {
           logo_path?: string | null
           name: string
           phone?: string | null
+          postal_address?: string | null
         }
         Update: {
           address?: string | null
@@ -476,6 +478,7 @@ export type Database = {
           logo_path?: string | null
           name?: string
           phone?: string | null
+          postal_address?: string | null
         }
         Relationships: []
       }
@@ -514,6 +517,44 @@ export type Database = {
           },
           {
             foreignKeyName: "pharmacy_stock_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      printed_docs: {
+        Row: {
+          brand: Json
+          created_at: string
+          created_by: string | null
+          html: string
+          id: string
+          pharmacy_id: string | null
+          title: string
+        }
+        Insert: {
+          brand?: Json
+          created_at?: string
+          created_by?: string | null
+          html: string
+          id?: string
+          pharmacy_id?: string | null
+          title: string
+        }
+        Update: {
+          brand?: Json
+          created_at?: string
+          created_by?: string | null
+          html?: string
+          id?: string
+          pharmacy_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "printed_docs_pharmacy_id_fkey"
             columns: ["pharmacy_id"]
             isOneToOne: false
             referencedRelation: "pharmacies"
@@ -1033,6 +1074,7 @@ export type Database = {
       vacancy_applications: {
         Row: {
           applicant_name: string
+          archived_at: string | null
           certificate_paths: string[]
           created_at: string
           cv_path: string | null
@@ -1045,6 +1087,7 @@ export type Database = {
         }
         Insert: {
           applicant_name: string
+          archived_at?: string | null
           certificate_paths?: string[]
           created_at?: string
           cv_path?: string | null
@@ -1057,6 +1100,7 @@ export type Database = {
         }
         Update: {
           applicant_name?: string
+          archived_at?: string | null
           certificate_paths?: string[]
           created_at?: string
           cv_path?: string | null

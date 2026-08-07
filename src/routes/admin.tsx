@@ -528,7 +528,7 @@ function ReconciliationPanel() {
 }
 
 // =============== Pharmacy Info Panel ===============
-type PharmacyRow = { id: string; name: string; phone: string | null; email: string | null; address: string | null; location: string | null; logo_path: string | null };
+type PharmacyRow = { id: string; name: string; phone: string | null; email: string | null; address: string | null; postal_address: string | null; location: string | null; logo_path: string | null };
 
 function PharmacyInfoPanel() {
   const { profile } = useAuth();
@@ -539,8 +539,9 @@ function PharmacyInfoPanel() {
   const load = async () => {
     if (!profile?.pharmacy_id) return;
     const { data } = await supabase.from("pharmacies")
-      .select("id, name, phone, email, address, location, logo_path")
+      .select("id, name, phone, email, address, postal_address, location, logo_path")
       .eq("id", profile.pharmacy_id).maybeSingle();
+
     setRow(data as PharmacyRow);
     if (data?.logo_path) {
       const { data: signed } = await supabase.storage.from("pharmacy-logos").createSignedUrl(data.logo_path, 3600);
@@ -556,8 +557,10 @@ function PharmacyInfoPanel() {
     e.preventDefault();
     setBusy(true);
     const { error } = await supabase.from("pharmacies").update({
-      name: row.name, phone: row.phone, email: row.email, address: row.address, location: row.location,
+      name: row.name, phone: row.phone, email: row.email, address: row.address,
+      postal_address: row.postal_address, location: row.location,
     }).eq("id", row.id);
+
     setBusy(false);
     if (error) toast.error(error.message); else toast.success("Pharmacy info saved");
   };
@@ -587,12 +590,19 @@ function PharmacyInfoPanel() {
             </div>
           </div>
           <div><Label>Pharmacy name</Label><Input value={row.name ?? ""} onChange={e => setRow({...row, name: e.target.value})} required/></div>
-          <div><Label>Phone</Label><Input value={row.phone ?? ""} onChange={e => setRow({...row, phone: e.target.value})}/></div>
-          <div><Label>Email</Label><Input type="email" value={row.email ?? ""} onChange={e => setRow({...row, email: e.target.value})}/></div>
-          <div><Label>Location</Label><Input value={row.location ?? ""} onChange={e => setRow({...row, location: e.target.value})} placeholder="Town / county"/></div>
-          <div className="sm:col-span-2"><Label>Address</Label><Textarea rows={2} value={row.address ?? ""} onChange={e => setRow({...row, address: e.target.value})}/></div>
-          <div className="sm:col-span-2"><Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save pharmacy info"}</Button></div>
+          <div><Label>Phone number</Label><Input value={row.phone ?? ""} onChange={e => setRow({...row, phone: e.target.value})}/></div>
+          <div><Label>Email address</Label><Input type="email" value={row.email ?? ""} onChange={e => setRow({...row, email: e.target.value})}/></div>
+          <div><Label>Postal address</Label><Input value={row.postal_address ?? ""} onChange={e => setRow({...row, postal_address: e.target.value})} placeholder="e.g. 1234-20100, Nakuru"/></div>
+          <div><Label>Location / street address</Label><Input value={row.location ?? ""} onChange={e => setRow({...row, location: e.target.value})} placeholder="Town / street"/></div>
+          <div className="sm:col-span-2"><Label>Physical address (extra details)</Label><Textarea rows={2} value={row.address ?? ""} onChange={e => setRow({...row, address: e.target.value})}/></div>
+          <div className="sm:col-span-2">
+            <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save pharmacy info"}</Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              The name and logo saved here replace “LEMSA PMS” at the top of every page and appear on every printed or downloaded PDF.
+            </p>
+          </div>
         </form>
+
       </CardContent>
     </Card>
   );
