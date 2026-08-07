@@ -165,41 +165,45 @@ function OrderTrackPage() {
           <CardHeader><CardTitle className="flex items-center gap-2"><Navigation className="h-5 w-5" />Record Tracking Point</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <Label>Search buyer</Label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input className="pl-8" placeholder="Buyer name, phone, ID or location…" value={buyerQuery} onChange={e => setBuyerQuery(e.target.value)} />
-                </div>
-                <Button variant="secondary" onClick={() => {
-                  const first = matchingOrders[0];
-                  if (!first) { toast.error("No order found for that buyer"); return; }
-                  setOrderId(first.id);
-                  setSavedBuyer(first.wholesale_buyers ?? null);
-                  toast.success(`Saved ${first.wholesale_buyers?.name ?? "buyer"}`);
-                }}>Save</Button>
+              <Label>Buyer name</Label>
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input className="pl-8" placeholder="Type buyer name, phone, ID or location…"
+                  value={buyerQuery} onChange={e => setBuyerQuery(e.target.value)} />
+                {buyerQuery.trim() && !savedBuyer && (
+                  <div className="absolute z-20 mt-1 w-full rounded-md border bg-popover shadow-md max-h-64 overflow-y-auto">
+                    {matchingOrders.length === 0 && <p className="p-2 text-sm text-muted-foreground">No buyer found</p>}
+                    {matchingOrders.map(o => (
+                      <button key={o.id} type="button" className="w-full text-left px-3 py-2 text-sm hover:bg-accent"
+                        onClick={() => {
+                          setOrderId(o.id);
+                          setSavedBuyer(o.wholesale_buyers ?? null);
+                          setBuyerQuery(o.wholesale_buyers?.name ?? "");
+                          toast.success(`Saved ${o.wholesale_buyers?.name ?? "buyer"} — you can start tracking`);
+                        }}>
+                        <div className="font-medium">{o.wholesale_buyers?.name ?? "Buyer"}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {o.wholesale_buyers?.phone ?? "no phone"} · {o.wholesale_buyers?.location ?? "no location"} · {new Date(o.created_at).toLocaleDateString()}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             {buyer && (
               <div className="rounded-md border p-3 text-sm grid sm:grid-cols-3 gap-2 bg-muted/30">
-                <div><div className="text-xs text-muted-foreground">Name</div><div className="font-medium">{buyer.name}</div></div>
+                <div><div className="text-xs text-muted-foreground">Buyer name</div><div className="font-medium">{buyer.name}</div></div>
                 <div><div className="text-xs text-muted-foreground">Phone number</div><div className="font-medium">{buyer.phone ?? "—"}</div></div>
                 <div><div className="text-xs text-muted-foreground">Location</div><div className="font-medium">{buyer.location ?? "—"}</div></div>
+                <div className="sm:col-span-3">
+                  <Button size="sm" variant="ghost" onClick={() => { setSavedBuyer(null); setOrderId(""); setBuyerQuery(""); }}>
+                    Change buyer
+                  </Button>
+                </div>
               </div>
             )}
-            <div>
-              <Label>Select order</Label>
-              <Select value={orderId} onValueChange={(v) => { setOrderId(v); setSavedBuyer(orders.find(o => o.id === v)?.wholesale_buyers ?? null); }}>
-                <SelectTrigger><SelectValue placeholder="Choose order" /></SelectTrigger>
-                <SelectContent>
-                  {matchingOrders.map(o => (
-                    <SelectItem key={o.id} value={o.id}>
-                      #{o.id.slice(0, 8)} · {o.wholesale_buyers?.name ?? "Buyer"} · {new Date(o.created_at).toLocaleDateString()}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+
             <div><Label>Location name (e.g. Nakuru CBD)</Label><Input value={locName} onChange={e => setLocName(e.target.value)} placeholder="Type current location" /></div>
             <div><Label>Note (optional)</Label><Textarea rows={2} value={note} onChange={e => setNote(e.target.value)} /></div>
             <div className="flex gap-2">
