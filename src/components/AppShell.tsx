@@ -109,15 +109,25 @@ export function AppShell({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
           <Link to="/pharmacy" className="flex items-center gap-3 min-w-0">
             <div className="h-11 w-11 shrink-0 rounded-xl bg-primary/10 text-primary flex items-center justify-center overflow-hidden">
-              {branding.logoUrl ? (
-                <img src={branding.logoUrl} alt={branding.name} className="h-full w-full object-cover" />
+              {(pharmLogo || branding.logoUrl) ? (
+                <img src={pharmLogo || branding.logoUrl!} alt={pharmName ?? branding.name} className="h-full w-full object-cover" />
               ) : (
                 <Pill className="h-6 w-6" />
               )}
             </div>
             <div className="text-2xl sm:text-3xl font-extrabold tracking-tight uppercase truncate">
-              <span className="text-primary">LEMSA</span> <span className="text-emerald-600">PMS</span>
+              {(() => {
+                const full = (pharmName ?? "LEMSA PMS").trim();
+                const [first, ...rest] = full.split(/\s+/);
+                return (
+                  <>
+                    <span className="text-primary">{first}</span>
+                    {rest.length > 0 && <> <span className="text-emerald-600">{rest.join(" ")}</span></>}
+                  </>
+                );
+              })()}
             </div>
+
           </Link>
           <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">
