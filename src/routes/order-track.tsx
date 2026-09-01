@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { printElement } from "@/lib/print";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ function OrderTrackPage() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [events, setEvents] = useState<Ev[]>([]);
+  const [pick, setPick] = useState<string[]>([]);
   const [orderId, setOrderId] = useState<string>("");
   const [buyerQuery, setBuyerQuery] = useState("");
   const [savedBuyer, setSavedBuyer] = useState<Buyer | null>(null);
@@ -233,11 +235,19 @@ function OrderTrackPage() {
             </Button>
           </CardHeader>
           <CardContent>
+            <label className="inline-flex items-center gap-2 text-xs mb-3">
+              <Checkbox
+                checked={events.length > 0 && pick.length === events.length}
+                onCheckedChange={() => setPick(pick.length === events.length ? [] : events.map(e => e.id))}
+              />
+              Select all · only ticked rows are printed (none ticked = print all)
+            </label>
             <div ref={printRef} className="overflow-x-auto">
               <h1>Tracking History</h1>
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10 print:hidden" />
                     <TableHead>Name</TableHead>
                     <TableHead>Phone number</TableHead>
                     <TableHead>Location of buyer</TableHead>
@@ -247,9 +257,13 @@ function OrderTrackPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {events.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No tracking points yet</TableCell></TableRow>}
+                  {events.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No tracking points yet</TableCell></TableRow>}
                   {events.map(e => (
-                    <TableRow key={e.id}>
+                    <TableRow key={e.id} data-print-row={pick.includes(e.id) ? "1" : "0"}>
+                      <TableCell className="print:hidden">
+                        <Checkbox checked={pick.includes(e.id)}
+                          onCheckedChange={() => setPick(p => p.includes(e.id) ? p.filter(x => x !== e.id) : [...p, e.id])} />
+                      </TableCell>
                       <TableCell className="font-medium">{buyer?.name ?? "—"}</TableCell>
                       <TableCell>{buyer?.phone ?? "—"}</TableCell>
                       <TableCell>{buyer?.location ?? "—"}</TableCell>
