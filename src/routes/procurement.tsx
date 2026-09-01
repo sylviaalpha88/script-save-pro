@@ -473,7 +473,8 @@ function PharmacyRequestsPanel() {
               <h1>Pharmacy Stock Orders</h1>
               {visible.length === 0 && <p className="text-muted-foreground text-center py-6">No stock orders to show.</p>}
               {visible.map(o => (
-                <div key={o.id} className="border rounded-md p-3 space-y-2">
+                <div key={o.id} data-print-row={sel.includes(o.id) ? "1" : "0"} className="border rounded-md p-3 space-y-2">
+
                   <div className="flex flex-wrap justify-between items-center gap-2">
                     <div className="flex items-center gap-3">
                       <span className="print:hidden">
