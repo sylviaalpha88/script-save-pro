@@ -211,7 +211,8 @@ function StockOrderPanel() {
                       <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground">Every item is above its average stock — nothing to order.</TableCell></TableRow>
                     )}
                     {list.map(r => (
-                      <TableRow key={r.id} className={r.level === "critical" ? "bg-destructive/5" : "bg-blue-50/60"}>
+                      <TableRow key={r.id} data-print-row={sel.includes(r.id) ? "1" : "0"} className={r.level === "critical" ? "bg-destructive/5" : "bg-blue-50/60"}>
+
                         <TableCell className="print:hidden">
                           <Checkbox checked={sel.includes(r.id)} onCheckedChange={() => toggle(r.id)} />
                         </TableCell>
