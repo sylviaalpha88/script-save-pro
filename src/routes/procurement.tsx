@@ -182,8 +182,9 @@ function StockOrderPanel() {
               <span className="inline-flex items-center gap-2"><span className="h-3 w-6 rounded bg-blue-100 border border-blue-400" />Between minimum and average stock</span>
               <label className="inline-flex items-center gap-2">
                 <Checkbox checked={allSelected} onCheckedChange={() => setSel(allSelected ? [] : list.map(r => r.id))} />
-                Select all
+                Select all · only ticked rows are printed (none ticked = print all)
               </label>
+
             </div>
             <div ref={printRef}>
               <h1>Stock Order Requisition</h1>
