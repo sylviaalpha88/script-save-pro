@@ -253,6 +253,13 @@ function StockOrderPanel() {
             </div>
           </CardHeader>
           <CardContent>
+            <label className="inline-flex items-center gap-2 text-xs mb-3">
+              <Checkbox
+                checked={histList.length > 0 && histSel.length === histList.length}
+                onCheckedChange={() => setHistSel(histSel.length === histList.length ? [] : histList.map(a => a.id))}
+              />
+              Select all · only ticked rows are printed (none ticked = print all)
+            </label>
             <div ref={histRef}>
               <h1>Stock Order History</h1>
               <div className="sub text-xs text-muted-foreground mb-3">{from} → {to}</div>
@@ -260,6 +267,7 @@ function StockOrderPanel() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-10 print:hidden" />
                       <TableHead>Moved</TableHead>
                       <TableHead>Item</TableHead>
                       <TableHead>Category</TableHead>
@@ -272,10 +280,14 @@ function StockOrderPanel() {
                   </TableHeader>
                   <TableBody>
                     {histList.length === 0 && (
-                      <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Nothing moved to history in these dates.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground">Nothing moved to history in these dates.</TableCell></TableRow>
                     )}
                     {histList.map(a => (
-                      <TableRow key={a.id}>
+                      <TableRow key={a.id} data-print-row={histSel.includes(a.id) ? "1" : "0"}>
+                        <TableCell className="print:hidden">
+                          <Checkbox checked={histSel.includes(a.id)}
+                            onCheckedChange={() => setHistSel(p => p.includes(a.id) ? p.filter(x => x !== a.id) : [...p, a.id])} />
+                        </TableCell>
                         <TableCell className="text-xs">{new Date(a.moved_at).toLocaleString()}</TableCell>
                         <TableCell className="font-medium">{a.drug_name}</TableCell>
                         <TableCell>{a.category || "—"}</TableCell>
@@ -287,6 +299,7 @@ function StockOrderPanel() {
                       </TableRow>
                     ))}
                   </TableBody>
+
                 </Table>
               </div>
               <SignOffBlock />
