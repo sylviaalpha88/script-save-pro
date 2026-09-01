@@ -85,6 +85,21 @@ async function publishDoc(title: string, bodyHtml: string): Promise<string | nul
   }
 }
 
+/**
+ * Build the printable HTML of an element:
+ *  - drops screen-only controls (anything with a `print:hidden` class)
+ *  - when rows are ticked (`data-print-row="1"`), keeps only those rows
+ */
+function printableHtml(el: HTMLElement): string {
+  const clone = el.cloneNode(true) as HTMLElement;
+  clone.querySelectorAll<HTMLElement>('[class*="print:hidden"]').forEach((n) => n.remove());
+  const picked = clone.querySelectorAll('[data-print-row="1"]');
+  if (picked.length > 0) {
+    clone.querySelectorAll('[data-print-row="0"]').forEach((n) => n.remove());
+  }
+  return clone.innerHTML;
+}
+
 /** Open a print window containing the HTML of the given element. */
 export async function printElement(el: HTMLElement | null, title: string) {
   if (!el) return;
@@ -94,8 +109,9 @@ export async function printElement(el: HTMLElement | null, title: string) {
 <style>${PRINT_CSS}</style></head><body><p style="font:12px system-ui;color:#666">Preparing document…</p></body></html>`);
   w.document.close();
 
-  const bodyHtml = el.innerHTML;
+  const bodyHtml = printableHtml(el);
   const docId = await publishDoc(title, bodyHtml);
+
 
   let qr: string | null = null;
   try {
