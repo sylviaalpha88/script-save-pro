@@ -463,8 +463,9 @@ function PharmacyRequestsPanel() {
             <div className="flex flex-wrap items-center gap-3 text-sm">
               <label className="inline-flex items-center gap-2">
                 <Checkbox checked={allSelected} onCheckedChange={() => setSel(allSelected ? [] : visible.map(o => o.id))} />
-                Select all
+                Select all · only ticked requests are printed (none ticked = print all)
               </label>
+
               <Button size="sm" disabled={busy || sel.length === 0} onClick={() => bulk("approve")}>Approve selected ({sel.length})</Button>
               <Button size="sm" variant="outline" disabled={busy || sel.length === 0} onClick={() => bulk("reject")}>Reject selected</Button>
             </div>
