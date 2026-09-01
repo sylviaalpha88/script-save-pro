@@ -93,6 +93,8 @@ function StockOrderPanel() {
   const [rows, setRows] = useState<ReorderRow[]>([]);
   const [archived, setArchived] = useState<ArchiveRow[]>([]);
   const [sel, setSel] = useState<string[]>([]);
+  const [histSel, setHistSel] = useState<string[]>([]);
+
   const [from, setFrom] = useState(todayStr());
   const [to, setTo] = useState(todayStr());
   const [busy, setBusy] = useState(false);
@@ -180,8 +182,9 @@ function StockOrderPanel() {
               <span className="inline-flex items-center gap-2"><span className="h-3 w-6 rounded bg-blue-100 border border-blue-400" />Between minimum and average stock</span>
               <label className="inline-flex items-center gap-2">
                 <Checkbox checked={allSelected} onCheckedChange={() => setSel(allSelected ? [] : list.map(r => r.id))} />
-                Select all
+                Select all · only ticked rows are printed (none ticked = print all)
               </label>
+
             </div>
             <div ref={printRef}>
               <h1>Stock Order Requisition</h1>
@@ -211,7 +214,8 @@ function StockOrderPanel() {
                       <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground">Every item is above its average stock — nothing to order.</TableCell></TableRow>
                     )}
                     {list.map(r => (
-                      <TableRow key={r.id} className={r.level === "critical" ? "bg-destructive/5" : "bg-blue-50/60"}>
+                      <TableRow key={r.id} data-print-row={sel.includes(r.id) ? "1" : "0"} className={r.level === "critical" ? "bg-destructive/5" : "bg-blue-50/60"}>
+
                         <TableCell className="print:hidden">
                           <Checkbox checked={sel.includes(r.id)} onCheckedChange={() => toggle(r.id)} />
                         </TableCell>
@@ -250,6 +254,13 @@ function StockOrderPanel() {
             </div>
           </CardHeader>
           <CardContent>
+            <label className="inline-flex items-center gap-2 text-xs mb-3">
+              <Checkbox
+                checked={histList.length > 0 && histSel.length === histList.length}
+                onCheckedChange={() => setHistSel(histSel.length === histList.length ? [] : histList.map(a => a.id))}
+              />
+              Select all · only ticked rows are printed (none ticked = print all)
+            </label>
             <div ref={histRef}>
               <h1>Stock Order History</h1>
               <div className="sub text-xs text-muted-foreground mb-3">{from} → {to}</div>
@@ -257,6 +268,7 @@ function StockOrderPanel() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-10 print:hidden" />
                       <TableHead>Moved</TableHead>
                       <TableHead>Item</TableHead>
                       <TableHead>Category</TableHead>
@@ -269,10 +281,14 @@ function StockOrderPanel() {
                   </TableHeader>
                   <TableBody>
                     {histList.length === 0 && (
-                      <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Nothing moved to history in these dates.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground">Nothing moved to history in these dates.</TableCell></TableRow>
                     )}
                     {histList.map(a => (
-                      <TableRow key={a.id}>
+                      <TableRow key={a.id} data-print-row={histSel.includes(a.id) ? "1" : "0"}>
+                        <TableCell className="print:hidden">
+                          <Checkbox checked={histSel.includes(a.id)}
+                            onCheckedChange={() => setHistSel(p => p.includes(a.id) ? p.filter(x => x !== a.id) : [...p, a.id])} />
+                        </TableCell>
                         <TableCell className="text-xs">{new Date(a.moved_at).toLocaleString()}</TableCell>
                         <TableCell className="font-medium">{a.drug_name}</TableCell>
                         <TableCell>{a.category || "—"}</TableCell>
@@ -284,6 +300,7 @@ function StockOrderPanel() {
                       </TableRow>
                     ))}
                   </TableBody>
+
                 </Table>
               </div>
               <SignOffBlock />
@@ -446,8 +463,9 @@ function PharmacyRequestsPanel() {
             <div className="flex flex-wrap items-center gap-3 text-sm">
               <label className="inline-flex items-center gap-2">
                 <Checkbox checked={allSelected} onCheckedChange={() => setSel(allSelected ? [] : visible.map(o => o.id))} />
-                Select all
+                Select all · only ticked requests are printed (none ticked = print all)
               </label>
+
               <Button size="sm" disabled={busy || sel.length === 0} onClick={() => bulk("approve")}>Approve selected ({sel.length})</Button>
               <Button size="sm" variant="outline" disabled={busy || sel.length === 0} onClick={() => bulk("reject")}>Reject selected</Button>
             </div>
@@ -456,7 +474,8 @@ function PharmacyRequestsPanel() {
               <h1>Pharmacy Stock Orders</h1>
               {visible.length === 0 && <p className="text-muted-foreground text-center py-6">No stock orders to show.</p>}
               {visible.map(o => (
-                <div key={o.id} className="border rounded-md p-3 space-y-2">
+                <div key={o.id} data-print-row={sel.includes(o.id) ? "1" : "0"} className="border rounded-md p-3 space-y-2">
+
                   <div className="flex flex-wrap justify-between items-center gap-2">
                     <div className="flex items-center gap-3">
                       <span className="print:hidden">

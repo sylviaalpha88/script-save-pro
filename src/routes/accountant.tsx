@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { AppShell } from "@/components/AppShell";
 import { printElement } from "@/lib/print";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ function AccountantPage() {
   const [mpesa, setMpesa] = useState("");
   const [notes, setNotes] = useState("");
   const [reports, setReports] = useState<Report[]>([]);
+  const [pick, setPick] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -121,13 +123,20 @@ function AccountantPage() {
                 <Button onClick={load} size="sm">Apply</Button>
                 <Button variant="outline" size="sm" onClick={() => { const t = todayISO(); setFrom(t); setTo(t); setTimeout(load, 0); }}>Today</Button>
               </div>
+              <label className="inline-flex items-center gap-2 text-xs">
+                <Checkbox
+                  checked={reports.length > 0 && pick.length === reports.length}
+                  onCheckedChange={() => setPick(pick.length === reports.length ? [] : reports.map(r => r.id))}
+                />
+                Select all · only ticked rows are printed (none ticked = print all)
+              </label>
               <div ref={printRef} className="border rounded-md overflow-x-auto">
                 <h1>Daily Reports History</h1>
                 <Table>
-                  <TableHeader><TableRow><TableHead>Date</TableHead><TableHead className="text-right">Cash</TableHead><TableHead className="text-right">M-Pesa</TableHead><TableHead className="text-right">Total</TableHead><TableHead>Notes</TableHead><TableHead></TableHead></TableRow></TableHeader>
+                  <TableHeader><TableRow><TableHead className="w-10 print:hidden" /><TableHead>Date</TableHead><TableHead className="text-right">Cash</TableHead><TableHead className="text-right">M-Pesa</TableHead><TableHead className="text-right">Total</TableHead><TableHead>Notes</TableHead><TableHead></TableHead></TableRow></TableHeader>
                   <TableBody>
-                    {reports.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No reports in range</TableCell></TableRow>}
-                    {reports.map(r => <ReportRow key={r.id} r={r} onChanged={load} />)}
+                    {reports.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No reports in range</TableCell></TableRow>}
+                    {reports.map(r => <ReportRow key={r.id} r={r} onChanged={load} picked={pick.includes(r.id)} onPick={() => setPick(p => p.includes(r.id) ? p.filter(x => x !== r.id) : [...p, r.id])} />)}
                   </TableBody>
                 </Table>
               </div>
@@ -140,7 +149,7 @@ function AccountantPage() {
 }
 
 
-function ReportRow({ r, onChanged }: { r: Report; onChanged: () => void }) {
+function ReportRow({ r, onChanged, picked, onPick }: { r: Report; onChanged: () => void; picked: boolean; onPick: () => void }) {
   const [editing, setEditing] = useState(false);
   const [cash, setCash] = useState(String(r.cash));
   const [mpesa, setMpesa] = useState(String(r.mpesa));
@@ -158,7 +167,8 @@ function ReportRow({ r, onChanged }: { r: Report; onChanged: () => void }) {
   };
 
   return (
-    <TableRow>
+    <TableRow data-print-row={picked ? "1" : "0"}>
+      <TableCell className="print:hidden"><Checkbox checked={picked} onCheckedChange={onPick} /></TableCell>
       <TableCell>{r.report_date}</TableCell>
       <TableCell className="text-right">
         {editing ? <Input type="number" className="h-7 w-24 ml-auto" value={cash} onChange={e => setCash(e.target.value)} /> : `KSh ${Number(r.cash).toFixed(2)}`}
