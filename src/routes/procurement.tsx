@@ -93,6 +93,8 @@ function StockOrderPanel() {
   const [rows, setRows] = useState<ReorderRow[]>([]);
   const [archived, setArchived] = useState<ArchiveRow[]>([]);
   const [sel, setSel] = useState<string[]>([]);
+  const [histSel, setHistSel] = useState<string[]>([]);
+
   const [from, setFrom] = useState(todayStr());
   const [to, setTo] = useState(todayStr());
   const [busy, setBusy] = useState(false);
