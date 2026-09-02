@@ -6,7 +6,7 @@ import { setPrintBrand } from "@/lib/print";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
-  Pill, LogOut, LayoutGrid, Package, Calculator, Truck, Globe, UserCog, MessageSquare, Briefcase, Tags,
+  Pill, LogOut, LayoutGrid, Package, Calculator, Truck, Globe, UserCog, MessageSquare, Briefcase, Tags, Image as ImageIcon,
 } from "lucide-react";
 import { allowedModules, type ModuleKey } from "@/lib/access";
 import { type ReactNode, useEffect, useState } from "react";
