@@ -215,8 +215,8 @@ function AdminsPanel() {
                 {pharmacies.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
-            <div><Label>Admin username</Label><Input value={username} onChange={e => setUsername(e.target.value)} required /></div>
-            <div><Label>Admin password</Label><Input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6}/></div>
+            <div><Label>Admin username</Label><Input name="new-admin-username" value={username} onChange={e => setUsername(e.target.value)} required autoComplete="off" autoCorrect="off" spellCheck={false} /></div>
+            <div><Label>Admin password</Label><Input name="new-admin-password" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} autoComplete="new-password" /></div>
             <div className="flex items-center justify-between rounded-md border p-3">
               <div>
                 <div className="font-medium text-sm">Can edit public site</div>
