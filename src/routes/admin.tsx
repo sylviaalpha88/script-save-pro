@@ -310,9 +310,9 @@ function UsersPanel() {
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><Users className="h-5 w-5"/>Add Staff</CardTitle></CardHeader>
         <CardContent>
-          <form onSubmit={onCreate} className="space-y-3">
-            <div><Label>Username</Label><Input value={username} onChange={e => setUsername(e.target.value)} required /></div>
-            <div><Label>Password</Label><Input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6}/></div>
+          <form onSubmit={onCreate} className="space-y-3" autoComplete="off">
+            <div><Label>Username</Label><Input name="new-user-username" value={username} onChange={e => setUsername(e.target.value)} required autoComplete="off" autoCorrect="off" spellCheck={false} /></div>
+            <div><Label>Password</Label><Input name="new-user-password" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} autoComplete="new-password" /></div>
             <div>
               <Label>Role</Label>
               <Select value={role} onValueChange={(v) => setRole(v as any)}>
