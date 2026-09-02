@@ -64,10 +64,10 @@ export function AccessPanel() {
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" />Add user &amp; choose what they can access</CardTitle></CardHeader>
         <CardContent>
-          <form onSubmit={onCreate} className="grid md:grid-cols-2 gap-4">
+          <form onSubmit={onCreate} className="grid md:grid-cols-2 gap-4" autoComplete="off">
             <div className="space-y-3">
-              <div><Label>Username</Label><Input value={username} onChange={e => setUsername(e.target.value)} required /></div>
-              <div><Label>Password</Label><Input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} /></div>
+              <div><Label>Username</Label><Input name="new-staff-username" value={username} onChange={e => setUsername(e.target.value)} required autoComplete="off" autoCorrect="off" spellCheck={false} /></div>
+              <div><Label>Password</Label><Input name="new-staff-password" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} autoComplete="new-password" /></div>
               <div>
                 <Label>Main role</Label>
                 <Select value={role} onValueChange={v => setRole(v as never)}>
