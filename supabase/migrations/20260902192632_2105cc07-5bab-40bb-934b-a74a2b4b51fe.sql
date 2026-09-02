@@ -1,0 +1,1 @@
+CREATE POLICY "staff delete messages" ON public.messages FOR DELETE TO authenticated USING ((pharmacy_id = public.current_pharmacy_id()) OR public.is_director(auth.uid()));
