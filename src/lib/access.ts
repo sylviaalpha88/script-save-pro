@@ -9,6 +9,7 @@ export const MODULES = [
   { key: "admin_settings", label: "Admin Settings" },
   { key: "vacancy", label: "Vacancy" },
   { key: "service_stock", label: "Service Stock" },
+  { key: "pharm_branding", label: "Pharm Branding" },
 ] as const;
 
 export type ModuleKey = (typeof MODULES)[number]["key"];

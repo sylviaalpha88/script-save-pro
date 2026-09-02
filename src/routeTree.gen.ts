@@ -14,6 +14,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as PublicSiteRouteImport } from './routes/public-site'
 import { Route as ProcurementRouteImport } from './routes/procurement'
 import { Route as PharmacyRouteImport } from './routes/pharmacy'
+import { Route as PharmBrandingRouteImport } from './routes/pharm-branding'
 import { Route as OrderTrackRouteImport } from './routes/order-track'
 import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as InventoryRouteImport } from './routes/inventory'
@@ -51,6 +52,11 @@ const ProcurementRoute = ProcurementRouteImport.update({
 const PharmacyRoute = PharmacyRouteImport.update({
   id: '/pharmacy',
   path: '/pharmacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PharmBrandingRoute = PharmBrandingRouteImport.update({
+  id: '/pharm-branding',
+  path: '/pharm-branding',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrderTrackRoute = OrderTrackRouteImport.update({
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/inventory': typeof InventoryRoute
   '/messages': typeof MessagesRoute
   '/order-track': typeof OrderTrackRoute
+  '/pharm-branding': typeof PharmBrandingRoute
   '/pharmacy': typeof PharmacyRoute
   '/procurement': typeof ProcurementRoute
   '/public-site': typeof PublicSiteRoute
@@ -150,6 +157,7 @@ export interface FileRoutesByTo {
   '/inventory': typeof InventoryRoute
   '/messages': typeof MessagesRoute
   '/order-track': typeof OrderTrackRoute
+  '/pharm-branding': typeof PharmBrandingRoute
   '/pharmacy': typeof PharmacyRoute
   '/procurement': typeof ProcurementRoute
   '/public-site': typeof PublicSiteRoute
@@ -171,6 +179,7 @@ export interface FileRoutesById {
   '/inventory': typeof InventoryRoute
   '/messages': typeof MessagesRoute
   '/order-track': typeof OrderTrackRoute
+  '/pharm-branding': typeof PharmBrandingRoute
   '/pharmacy': typeof PharmacyRoute
   '/procurement': typeof ProcurementRoute
   '/public-site': typeof PublicSiteRoute
@@ -193,6 +202,7 @@ export interface FileRouteTypes {
     | '/inventory'
     | '/messages'
     | '/order-track'
+    | '/pharm-branding'
     | '/pharmacy'
     | '/procurement'
     | '/public-site'
@@ -213,6 +223,7 @@ export interface FileRouteTypes {
     | '/inventory'
     | '/messages'
     | '/order-track'
+    | '/pharm-branding'
     | '/pharmacy'
     | '/procurement'
     | '/public-site'
@@ -233,6 +244,7 @@ export interface FileRouteTypes {
     | '/inventory'
     | '/messages'
     | '/order-track'
+    | '/pharm-branding'
     | '/pharmacy'
     | '/procurement'
     | '/public-site'
@@ -254,6 +266,7 @@ export interface RootRouteChildren {
   InventoryRoute: typeof InventoryRoute
   MessagesRoute: typeof MessagesRoute
   OrderTrackRoute: typeof OrderTrackRoute
+  PharmBrandingRoute: typeof PharmBrandingRoute
   PharmacyRoute: typeof PharmacyRoute
   ProcurementRoute: typeof ProcurementRoute
   PublicSiteRoute: typeof PublicSiteRoute
@@ -299,6 +312,13 @@ declare module '@tanstack/react-router' {
       path: '/pharmacy'
       fullPath: '/pharmacy'
       preLoaderRoute: typeof PharmacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pharm-branding': {
+      id: '/pharm-branding'
+      path: '/pharm-branding'
+      fullPath: '/pharm-branding'
+      preLoaderRoute: typeof PharmBrandingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/order-track': {
@@ -406,6 +426,7 @@ const rootRouteChildren: RootRouteChildren = {
   InventoryRoute: InventoryRoute,
   MessagesRoute: MessagesRoute,
   OrderTrackRoute: OrderTrackRoute,
+  PharmBrandingRoute: PharmBrandingRoute,
   PharmacyRoute: PharmacyRoute,
   ProcurementRoute: ProcurementRoute,
   PublicSiteRoute: PublicSiteRoute,
