@@ -34,7 +34,9 @@ function OrderTrackPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [events, setEvents] = useState<Ev[]>([]);
   const [pick, setPick] = useState<string[]>([]);
+  const [select, setSelect] = useState<string[]>([]);
   const [tracked, setTracked] = useState<Tracked[]>([]);
+
   const [buyerQuery, setBuyerQuery] = useState("");
   const [locName, setLocName] = useState("");
   const [note, setNote] = useState("");
@@ -171,10 +173,71 @@ function OrderTrackPage() {
   const buyerFor = (oid: string) =>
     tracked.find(t => t.orderId === oid)?.buyer ?? orders.find(o => o.id === oid)?.wholesale_buyers ?? null;
 
+  const trackSelected = () => {
+    const chosen = orders.filter(o => select.includes(o.id));
+    setTracked(list => {
+      const next = [...list];
+      for (const o of chosen) if (!next.some(x => x.orderId === o.id)) next.push({ orderId: o.id, buyer: o.wholesale_buyers ?? null });
+      return next;
+    });
+    setSelect([]);
+    toast.success(`Tracking ${chosen.length} selected order${chosen.length > 1 ? "s" : ""}`);
+  };
+
+
   return (
     <AppShell title="Pharmacy" subtitle="Track orders and delivery status">
+      <Card className="mb-6">
+        <CardHeader className="flex flex-row items-center justify-between gap-3 flex-wrap">
+          <CardTitle className="flex items-center gap-2">Wholesale Buyer Accounts ({orders.length})</CardTitle>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => setSelect(select.length === orders.length ? [] : orders.map(o => o.id))}>
+              {select.length === orders.length && orders.length > 0 ? "Unselect all" : "Select all"}
+            </Button>
+            <Button size="sm" disabled={select.length === 0} onClick={trackSelected}>
+              <Navigation className="h-4 w-4 mr-1" />Track selected ({select.length})
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-10" />
+                <TableHead>Buyer name</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Order date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Payment</TableHead>
+                <TableHead>Total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {orders.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">No wholesale buyer orders yet</TableCell></TableRow>}
+              {orders.map(o => (
+                <TableRow key={o.id} className={orderIds.includes(o.id) ? "bg-sky-50" : undefined}>
+                  <TableCell>
+                    <Checkbox checked={select.includes(o.id)}
+                      onCheckedChange={() => setSelect(s => s.includes(o.id) ? s.filter(x => x !== o.id) : [...s, o.id])} />
+                  </TableCell>
+                  <TableCell className="font-medium">{o.wholesale_buyers?.name ?? "Buyer"}</TableCell>
+                  <TableCell>{o.wholesale_buyers?.phone ?? "—"}</TableCell>
+                  <TableCell>{o.wholesale_buyers?.location ?? "—"}</TableCell>
+                  <TableCell className="text-xs whitespace-nowrap">{new Date(o.created_at).toLocaleDateString()}</TableCell>
+                  <TableCell className="capitalize">{o.status}</TableCell>
+                  <TableCell className="capitalize">{o.payment_status}</TableCell>
+                  <TableCell>KSh {Number(o.total).toLocaleString()}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
       <div className="grid lg:grid-cols-2 gap-6">
         <Card>
+
+
           <CardHeader><CardTitle className="flex items-center gap-2"><Navigation className="h-5 w-5" />Record Tracking Point</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <div>

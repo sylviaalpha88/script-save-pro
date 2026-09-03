@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Trash2, Tags } from "lucide-react";
+import { Trash2, Tags, HardDriveDownload } from "lucide-react";
+import { exportOfflineCopy, deleteRange } from "@/lib/offline-export";
 
 export const Route = createFileRoute("/inventory")({
   component: ServiceStockPage,
@@ -48,10 +49,13 @@ function ServiceStockPage() {
           <TabsList>
             <TabsTrigger value="manage">Manage Service</TabsTrigger>
             <TabsTrigger value="add">Add New Service</TabsTrigger>
+            <TabsTrigger value="free">Free Space</TabsTrigger>
           </TabsList>
           <TabsContent value="manage"><ServiceList key={reload} /></TabsContent>
           <TabsContent value="add"><AddService onAdded={() => setReload(n => n + 1)} /></TabsContent>
+          <TabsContent value="free"><FreeSpace /></TabsContent>
         </Tabs>
+
       )}
     </AppShell>
   );
@@ -183,6 +187,72 @@ function AddService({ onAdded }: { onAdded: () => void }) {
           <div><Label>Wholesale selling price (per {unit})</Label><Input type="number" step="0.01" value={wholesale} onChange={e => setWholesale(e.target.value)} required /></div>
           <div className="sm:col-span-2"><Button type="submit" className="w-full">Save Service</Button></div>
         </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+function FreeSpace() {
+  const { profile } = useAuth();
+  const today = new Date().toISOString().slice(0, 10);
+  const [from, setFrom] = useState(today);
+  const [to, setTo] = useState(today);
+  const [busy, setBusy] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
+
+  const doExport = async () => {
+    setBusy(true);
+    try {
+      const res = await exportOfflineCopy(profile?.pharmacy_id ?? null, { from, to });
+      setDownloaded(true);
+      const total = Object.values(res.counts).reduce((a, b) => a + b, 0);
+      toast.success(
+        res.mode === "app"
+          ? `Full offline copy of the system downloaded (${total} records)`
+          : `Offline records copy downloaded (${total} records). Publish and download from the live site for the full app copy.`
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Export failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const doDelete = async () => {
+    if (!confirm(`Delete all live records from ${from} to ${to}? Make sure you downloaded the copy first.`)) return;
+    setBusy(true);
+    const errors = await deleteRange(profile?.pharmacy_id ?? null, { from, to });
+    setBusy(false);
+    if (errors.length) { toast.error(errors[0]); return; }
+    toast.success("Records in the selected dates deleted from the live system");
+  };
+
+  return (
+    <Card className="max-w-3xl">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><HardDriveDownload className="h-5 w-5" />Free Space</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Download an exact copy of this website — the real app bundle (all departments, registration, queues,
+          result entry and identical PDFs) inlined into one HTML file with your archived data pre-loaded, so it runs
+          offline on any PC. If a built bundle is not available (preview mode), a records-viewer copy is downloaded
+          instead. Publish and download from the live site for the full copy. After downloading, you can free space by
+          deleting the live records of the same dates.
+        </p>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div><Label>Date from</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
+          <div><Label>Date to</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={doExport} disabled={busy}>
+            <HardDriveDownload className="h-4 w-4 mr-1" />{busy ? "Working…" : "Download offline copy"}
+          </Button>
+          <Button variant="destructive" onClick={doDelete} disabled={busy || !downloaded}>
+            <Trash2 className="h-4 w-4 mr-1" />Delete these dates from the live site
+          </Button>
+        </div>
+        {!downloaded && <p className="text-xs text-muted-foreground">Deletion unlocks after a copy is downloaded.</p>}
       </CardContent>
     </Card>
   );
