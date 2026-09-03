@@ -221,6 +221,8 @@ function OrderTrackPage() {
         </CardContent>
       </Card>
       <div className="grid lg:grid-cols-2 gap-6">
+        <Card>
+
 
           <CardHeader><CardTitle className="flex items-center gap-2"><Navigation className="h-5 w-5" />Record Tracking Point</CardTitle></CardHeader>
           <CardContent className="space-y-3">
