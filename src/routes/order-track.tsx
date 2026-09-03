@@ -34,7 +34,9 @@ function OrderTrackPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [events, setEvents] = useState<Ev[]>([]);
   const [pick, setPick] = useState<string[]>([]);
+  const [select, setSelect] = useState<string[]>([]);
   const [tracked, setTracked] = useState<Tracked[]>([]);
+
   const [buyerQuery, setBuyerQuery] = useState("");
   const [locName, setLocName] = useState("");
   const [note, setNote] = useState("");
