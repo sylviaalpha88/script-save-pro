@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Send, Search, MessageSquare } from "lucide-react";
+import { Send, Search, MessageSquare, Trash2 } from "lucide-react";
 
 type Buyer = { id: string; name: string; phone: string | null };
 type MessageRow = {
@@ -43,6 +43,17 @@ export function MessagesPanel() {
     if (!q) return buyers;
     return buyers.filter(b => b.name.toLowerCase().includes(q) || (b.phone ?? "").includes(q));
   }, [buyers, search]);
+
+  const [pick, setPick] = useState<Record<string, boolean>>({});
+
+  const deleteMessages = async (ids: string[]) => {
+    if (ids.length === 0) { toast.error("Select messages to delete"); return; }
+    const { error } = await supabase.from("messages").delete().in("id", ids);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Deleted ${ids.length} message${ids.length > 1 ? "s" : ""}`);
+    setPick({});
+    await load();
+  };
 
   const selectedIds = Object.keys(selected).filter(k => selected[k]);
   const allChecked = filtered.length > 0 && filtered.every(b => selected[b.id]);
