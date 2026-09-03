@@ -48,10 +48,13 @@ function ServiceStockPage() {
           <TabsList>
             <TabsTrigger value="manage">Manage Service</TabsTrigger>
             <TabsTrigger value="add">Add New Service</TabsTrigger>
+            <TabsTrigger value="free">Free Space</TabsTrigger>
           </TabsList>
           <TabsContent value="manage"><ServiceList key={reload} /></TabsContent>
           <TabsContent value="add"><AddService onAdded={() => setReload(n => n + 1)} /></TabsContent>
+          <TabsContent value="free"><FreeSpace /></TabsContent>
         </Tabs>
+
       )}
     </AppShell>
   );
