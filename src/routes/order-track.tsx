@@ -173,6 +173,18 @@ function OrderTrackPage() {
   const buyerFor = (oid: string) =>
     tracked.find(t => t.orderId === oid)?.buyer ?? orders.find(o => o.id === oid)?.wholesale_buyers ?? null;
 
+  const trackSelected = () => {
+    const chosen = orders.filter(o => select.includes(o.id));
+    setTracked(list => {
+      const next = [...list];
+      for (const o of chosen) if (!next.some(x => x.orderId === o.id)) next.push({ orderId: o.id, buyer: o.wholesale_buyers ?? null });
+      return next;
+    });
+    setSelect([]);
+    toast.success(`Tracking ${chosen.length} selected order${chosen.length > 1 ? "s" : ""}`);
+  };
+
+
   return (
     <AppShell title="Pharmacy" subtitle="Track orders and delivery status">
       <Card className="mb-6">
