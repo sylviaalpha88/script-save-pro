@@ -131,15 +131,35 @@ export function MessagesPanel() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Recent Messages ({history.length})</CardTitle></CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-3 flex-wrap">
+          <CardTitle>Recent Messages ({history.length})</CardTitle>
+          <Button variant="destructive" size="sm" onClick={() => deleteMessages(Object.keys(pick).filter(k => pick[k]))}>
+            <Trash2 className="h-4 w-4 mr-1" />Delete selected
+          </Button>
+        </CardHeader>
         <CardContent>
           <div className="border rounded-md overflow-auto max-h-[520px]">
             <Table>
-              <TableHeader><TableRow><TableHead>When</TableHead><TableHead>To</TableHead><TableHead>Body</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow>
+                <TableHead className="w-8">
+                  <Checkbox
+                    checked={history.length > 0 && history.every(m => pick[m.id])}
+                    onCheckedChange={(v) => {
+                      const next: Record<string, boolean> = {};
+                      if (v) history.forEach(m => { next[m.id] = true; });
+                      setPick(next);
+                    }}
+                  />
+                </TableHead>
+                <TableHead>When</TableHead><TableHead>To</TableHead><TableHead>Body</TableHead><TableHead>Status</TableHead><TableHead className="w-10" />
+              </TableRow></TableHeader>
               <TableBody>
-                {history.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No messages sent yet</TableCell></TableRow>}
+                {history.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No messages sent yet</TableCell></TableRow>}
                 {history.map(m => (
                   <TableRow key={m.id}>
+                    <TableCell>
+                      <Checkbox checked={!!pick[m.id]} onCheckedChange={(v) => setPick(s => ({ ...s, [m.id]: !!v }))} />
+                    </TableCell>
                     <TableCell className="text-xs whitespace-nowrap">{new Date(m.created_at).toLocaleString()}</TableCell>
                     <TableCell className="text-sm">
                       <div className="font-medium">{m.recipient_name}</div>
@@ -148,6 +168,11 @@ export function MessagesPanel() {
                     <TableCell className="text-sm max-w-xs truncate" title={m.body}>{m.body}</TableCell>
                     <TableCell>
                       <Badge variant={m.status === "sent" ? "default" : "destructive"}>{m.status}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm" onClick={() => deleteMessages([m.id])}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
