@@ -206,11 +206,8 @@ function FreeSpace() {
       const res = await exportOfflineCopy(profile?.pharmacy_id ?? null, { from, to });
       setDownloaded(true);
       const total = Object.values(res.counts).reduce((a, b) => a + b, 0);
-      toast.success(
-        res.mode === "app"
-          ? `Full offline copy of the system downloaded (${total} records)`
-          : `Offline records copy downloaded (${total} records). Publish and download from the live site for the full app copy.`
-      );
+      toast.success(`Offline copy downloaded (${total} records) — opens instantly with no internet`);
+
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Export failed");
     } finally {
