@@ -14,21 +14,22 @@ import { type ReactNode, useEffect, useState } from "react";
 
 interface NavItem { to: string; label: string; }
 
-type Tile = { to: string; label: string; icon: ReactNode; tone: string; module: ModuleKey };
+type Tile = { to: string; label: string; icon: ReactNode; tone: string; text: string; module: ModuleKey };
 
 const TILES: Tile[] = [
-  { to: "/admin", label: "Dashboard", icon: <LayoutGrid className="h-5 w-5" />, tone: "bg-violet-50 text-violet-700 border-violet-100 hover:bg-violet-100", module: "admin" },
-  { to: "/pharmacy", label: "Pharmacy", icon: <Pill className="h-5 w-5" />, tone: "bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100", module: "pharmacy" },
-  { to: "/procurement", label: "Procurement", icon: <Package className="h-5 w-5" />, tone: "bg-amber-50 text-amber-700 border-amber-100 hover:bg-amber-100", module: "procurement" },
-  { to: "/accountant", label: "Accountant", icon: <Calculator className="h-5 w-5" />, tone: "bg-rose-50 text-rose-700 border-rose-100 hover:bg-rose-100", module: "accountant" },
-  { to: "/order-track", label: "Order Track", icon: <Truck className="h-5 w-5" />, tone: "bg-sky-50 text-sky-700 border-sky-100 hover:bg-sky-100", module: "order_track" },
-  { to: "/public-site", label: "Public Site", icon: <Globe className="h-5 w-5" />, tone: "bg-indigo-50 text-indigo-700 border-indigo-100 hover:bg-indigo-100", module: "public_site" },
-  { to: "/director", label: "Admin Settings", icon: <UserCog className="h-5 w-5" />, tone: "bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100", module: "admin_settings" },
-  { to: "/messages", label: "Messages", icon: <MessageSquare className="h-5 w-5" />, tone: "bg-teal-50 text-teal-700 border-teal-100 hover:bg-teal-100", module: "messages" },
-  { to: "/vacancy", label: "Vacancy", icon: <Briefcase className="h-5 w-5" />, tone: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-100 hover:bg-fuchsia-100", module: "vacancy" },
-  { to: "/inventory", label: "Service Stock", icon: <Tags className="h-5 w-5" />, tone: "bg-lime-50 text-lime-700 border-lime-100 hover:bg-lime-100", module: "service_stock" },
-  { to: "/pharm-branding", label: "Pharm Branding", icon: <ImageIcon className="h-5 w-5" />, tone: "bg-orange-50 text-orange-700 border-orange-100 hover:bg-orange-100", module: "pharm_branding" },
+  { to: "/admin", label: "Dashboard", icon: <LayoutGrid className="h-6 w-6" />, tone: "bg-violet-50/70 border-violet-100 hover:bg-violet-100", text: "text-violet-700", module: "admin" },
+  { to: "/pharmacy", label: "Pharmacy", icon: <Pill className="h-6 w-6" />, tone: "bg-emerald-50/70 border-emerald-100 hover:bg-emerald-100", text: "text-emerald-700", module: "pharmacy" },
+  { to: "/procurement", label: "Procurement", icon: <Package className="h-6 w-6" />, tone: "bg-amber-50/70 border-amber-100 hover:bg-amber-100", text: "text-amber-700", module: "procurement" },
+  { to: "/accountant", label: "Accountant", icon: <Calculator className="h-6 w-6" />, tone: "bg-rose-50/70 border-rose-100 hover:bg-rose-100", text: "text-rose-700", module: "accountant" },
+  { to: "/order-track", label: "Order Track", icon: <Truck className="h-6 w-6" />, tone: "bg-sky-50/70 border-sky-100 hover:bg-sky-100", text: "text-sky-700", module: "order_track" },
+  { to: "/public-site", label: "Public Site", icon: <Globe className="h-6 w-6" />, tone: "bg-indigo-50/70 border-indigo-100 hover:bg-indigo-100", text: "text-indigo-700", module: "public_site" },
+  { to: "/director", label: "Admin Settings", icon: <UserCog className="h-6 w-6" />, tone: "bg-blue-50/70 border-blue-100 hover:bg-blue-100", text: "text-blue-700", module: "admin_settings" },
+  { to: "/messages", label: "Messages", icon: <MessageSquare className="h-6 w-6" />, tone: "bg-teal-50/70 border-teal-100 hover:bg-teal-100", text: "text-teal-700", module: "messages" },
+  { to: "/vacancy", label: "Vacancy", icon: <Briefcase className="h-6 w-6" />, tone: "bg-fuchsia-50/70 border-fuchsia-100 hover:bg-fuchsia-100", text: "text-fuchsia-700", module: "vacancy" },
+  { to: "/inventory", label: "Service Stock", icon: <Tags className="h-6 w-6" />, tone: "bg-lime-50/70 border-lime-100 hover:bg-lime-100", text: "text-lime-700", module: "service_stock" },
+  { to: "/pharm-branding", label: "Pharm Branding", icon: <ImageIcon className="h-6 w-6" />, tone: "bg-orange-50/70 border-orange-100 hover:bg-orange-100", text: "text-rose-600", module: "pharm_branding" },
 ];
+
 
 export function AppShell({
   title,
