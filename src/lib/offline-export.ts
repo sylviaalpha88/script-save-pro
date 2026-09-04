@@ -46,25 +46,68 @@ export async function collectArchive(pharmacyId: string | null, range: ExportRan
   };
 }
 
-/** Recursively inline a production module graph into one <script type="module">. */
+const MODULEISH = /\.([cm]?[jt]sx?)(\?|$)/;
+const BINARY = /\.(png|jpe?g|gif|svg|webp|avif|ico|woff2?|ttf|otf|mp4|mp3)(\?|$)/i;
+
+async function toDataUrl(url: string): Promise<string> {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  return await new Promise<string>((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(String(fr.result));
+    fr.onerror = reject;
+    fr.readAsDataURL(blob);
+  });
+}
+
+const jsDataUrl = (code: string) =>
+  `data:text/javascript;base64,${btoa(unescape(encodeURIComponent(code)))}`;
+
+const replaceAll = (code: string, spec: string, url: string) =>
+  code.split(`"${spec}"`).join(`"${url}"`).split(`'${spec}'`).join(`'${url}'`);
+
+/**
+ * Recursively inline a whole same-origin module graph (production bundle or the
+ * dev server's transformed modules) plus every static asset it references, so the
+ * result is one HTML file that renders the real app with no network at all.
+ */
 async function inlineModule(url: string, seen = new Map<string, string>()): Promise<string> {
   const cached = seen.get(url);
-  if (cached) return cached;
+  if (cached !== undefined) return cached;
+  seen.set(url, "");
   const res = await fetch(url);
   if (!res.ok) throw new Error(`asset ${url}`);
   let code = await res.text();
-  seen.set(url, "");
-  const specifiers = Array.from(code.matchAll(/["'](\/assets\/[^"']+\.[cm]?js)["']/g)).map(m => m[1]);
-  for (const spec of Array.from(new Set(specifiers))) {
-    const child = await inlineModule(spec, seen);
-    const dataUrl = `data:text/javascript;base64,${btoa(unescape(encodeURIComponent(child)))}`;
-    code = code.split(`"${spec}"`).join(`"${dataUrl}"`).split(`'${spec}'`).join(`'${dataUrl}'`);
+
+  const specs = Array.from(new Set(
+    Array.from(code.matchAll(/["'](\/[^"'\s>]+)["']/g)).map(m => m[1]),
+  ));
+  for (const spec of specs) {
+    try {
+      if (BINARY.test(spec)) {
+        code = replaceAll(code, spec, await toDataUrl(spec));
+      } else if (spec.endsWith(".css")) {
+        const css = await (await fetch(spec)).text();
+        code = replaceAll(code, spec, `data:text/css;base64,${btoa(unescape(encodeURIComponent(css)))}`);
+      } else if (
+        MODULEISH.test(spec) ||
+        spec.startsWith("/@vite/") ||
+        spec.startsWith("/@id/") ||
+        spec.startsWith("/@fs/") ||
+        spec.startsWith("/@react-refresh") ||
+        spec.includes("/node_modules/")
+      ) {
+        code = replaceAll(code, spec, jsDataUrl(await inlineModule(spec, seen)));
+      }
+    } catch {
+      /* leave the reference alone; the copy still runs */
+    }
   }
   seen.set(url, code);
   return code;
 }
 
-/** Try to build a single-file copy of the real app bundle with the archive pre-loaded. */
+/** Build a single-file copy of the real app with the archive pre-loaded. */
 async function buildAppCopy(data: ArchiveData, range: ExportRange): Promise<string | null> {
   try {
     const html = await (await fetch("/", { headers: { accept: "text/html" } })).text();
@@ -72,7 +115,6 @@ async function buildAppCopy(data: ArchiveData, range: ExportRange): Promise<stri
     const scripts = Array.from(doc.querySelectorAll<HTMLScriptElement>("script[src]"));
     const links = Array.from(doc.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"][href]'));
     if (scripts.length === 0) return null;
-    if (!scripts.every(s => (s.getAttribute("src") ?? "").startsWith("/assets/"))) return null;
 
     for (const l of links) {
       const href = l.getAttribute("href")!;
@@ -82,21 +124,34 @@ async function buildAppCopy(data: ArchiveData, range: ExportRange): Promise<stri
       l.replaceWith(style);
     }
     for (const s of scripts) {
-      const code = await inlineModule(s.getAttribute("src")!);
+      const src = s.getAttribute("src")!;
+      if (!src.startsWith("/")) continue;
+      const code = await inlineModule(src);
       const inline = doc.createElement("script");
       inline.type = "module";
       inline.textContent = code;
       s.replaceWith(inline);
     }
-    doc.querySelectorAll('link[rel="modulepreload"], link[rel="preload"]').forEach(n => n.remove());
+    // Inline images / icons that appear straight in the shell markup.
+    for (const el of Array.from(doc.querySelectorAll<HTMLElement>("img[src], link[href]"))) {
+      const attr = el.tagName === "IMG" ? "src" : "href";
+      const v = el.getAttribute(attr) ?? "";
+      if (v.startsWith("/") && BINARY.test(v)) {
+        try { el.setAttribute(attr, await toDataUrl(v)); } catch { /* ignore */ }
+      }
+    }
+    doc.querySelectorAll('link[rel="modulepreload"], link[rel="preload"], link[rel="prefetch"]').forEach(n => n.remove());
     const boot = doc.createElement("script");
-    boot.textContent = `window.__LEMSA_OFFLINE__=${JSON.stringify({ range, data })};`;
+    boot.textContent =
+      `window.__LEMSA_OFFLINE__=${JSON.stringify({ range, data })};` +
+      `window.__LEMSA_OFFLINE_MODE__=true;`;
     doc.head.prepend(boot);
     return `<!doctype html>${doc.documentElement.outerHTML}`;
   } catch {
     return null;
   }
 }
+
 
 /** Fallback: a self-contained records viewer with the same archive embedded. */
 function buildViewer(data: ArchiveData, range: ExportRange): string {
