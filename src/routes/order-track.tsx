@@ -368,8 +368,8 @@ function OrderTrackPage() {
               </Table>
             </div>
           </CardContent>
-        </Card>
-      </div>
+      </Card>
+
     </AppShell>
   );
 }
