@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { useSiteBranding } from "@/lib/site-branding";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,6 +39,7 @@ export function AppShell({
   const { profile, signOut, loading } = useAuth();
   const branding = useSiteBranding();
   const navigate = useNavigate();
+  const routerPath = useRouterState({ select: (r) => r.location.pathname });
   const [pharmName, setPharmName] = useState<string | null>(null);
   const [pharmLogo, setPharmLogo] = useState<string | null>(null);
 
@@ -101,6 +102,7 @@ export function AppShell({
   }
 
   const mods = allowedModules(profile);
+  const currentPath = routerPath;
 
   const denied = () =>
     toast.error("You do not have permission to access this page", {
