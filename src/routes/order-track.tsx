@@ -308,7 +308,9 @@ function OrderTrackPage() {
             <p className="text-xs text-muted-foreground">GPS uses your device's geolocation. Each entry is timestamped and visible to the buyers in real time.</p>
           </CardContent>
         </Card>
-        <Card>
+      </div>
+      <Card>
+
           <CardHeader className="flex flex-row items-center justify-between gap-3 flex-wrap">
             <CardTitle>Tracking History {tracked.length > 0 && `(${tracked.length} order${tracked.length > 1 ? "s" : ""})`}</CardTitle>
             <Button variant="outline" size="sm" onClick={() => printElement(printRef.current, "Tracking History")}>
