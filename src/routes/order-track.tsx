@@ -173,6 +173,8 @@ function OrderTrackPage() {
   const buyerFor = (oid: string) =>
     tracked.find(t => t.orderId === oid)?.buyer ?? orders.find(o => o.id === oid)?.wholesale_buyers ?? null;
 
+  const listOrders = useMemo(() => orders.filter(o => !orderIds.includes(o.id)), [orders, idsKey]);
+
   const trackSelected = () => {
     const chosen = orders.filter(o => select.includes(o.id));
     setTracked(list => {
@@ -187,12 +189,13 @@ function OrderTrackPage() {
 
   return (
     <AppShell title="Pharmacy" subtitle="Track orders and delivery status">
-      <Card className="mb-6">
+      <div className="grid lg:grid-cols-3 gap-6 mb-6 items-start">
+        <Card className="lg:col-span-2 lg:order-1">
         <CardHeader className="flex flex-row items-center justify-between gap-3 flex-wrap">
-          <CardTitle className="flex items-center gap-2">Wholesale Buyer Accounts ({orders.length})</CardTitle>
+          <CardTitle className="flex items-center gap-2">Wholesale Buyer Accounts ({listOrders.length})</CardTitle>
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => setSelect(select.length === orders.length ? [] : orders.map(o => o.id))}>
-              {select.length === orders.length && orders.length > 0 ? "Unselect all" : "Select all"}
+            <Button size="sm" variant="outline" onClick={() => setSelect(select.length === listOrders.length ? [] : listOrders.map(o => o.id))}>
+              {select.length === listOrders.length && listOrders.length > 0 ? "Unselect all" : "Select all"}
             </Button>
             <Button size="sm" disabled={select.length === 0} onClick={trackSelected}>
               <Navigation className="h-4 w-4 mr-1" />Track selected ({select.length})
@@ -214,9 +217,9 @@ function OrderTrackPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {orders.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">No wholesale buyer orders yet</TableCell></TableRow>}
-              {orders.map(o => (
-                <TableRow key={o.id} className={orderIds.includes(o.id) ? "bg-sky-50" : undefined}>
+              {listOrders.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">{orders.length === 0 ? "No wholesale buyer orders yet" : "All buyer orders are being tracked"}</TableCell></TableRow>}
+              {listOrders.map(o => (
+                <TableRow key={o.id}>
                   <TableCell>
                     <Checkbox checked={select.includes(o.id)}
                       onCheckedChange={() => setSelect(s => s.includes(o.id) ? s.filter(x => x !== o.id) : [...s, o.id])} />
@@ -234,11 +237,9 @@ function OrderTrackPage() {
           </Table>
         </CardContent>
       </Card>
-      <div className="grid lg:grid-cols-2 gap-6">
-        <Card>
-
-
+        <Card className="lg:order-2">
           <CardHeader><CardTitle className="flex items-center gap-2"><Navigation className="h-5 w-5" />Record Tracking Point</CardTitle></CardHeader>
+
           <CardContent className="space-y-3">
             <div>
               <Label>Buyer name (add as many as you need)</Label>
