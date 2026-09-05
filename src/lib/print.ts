@@ -16,6 +16,11 @@ export function setPrintBrand(brand: PrintBrand) {
   BRAND = brand;
 }
 
+/** Current branding (pharmacy name, logo, address lines) for offline copies. */
+export function getPrintBrand(): PrintBrand {
+  return BRAND;
+}
+
 const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
