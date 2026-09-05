@@ -231,12 +231,11 @@ function FreeSpace() {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Download an exact copy of this website — the real app bundle (all departments, registration, queues,
-          result entry and identical PDFs) inlined into one HTML file with your archived data pre-loaded, so it runs
-          offline on any PC. If a built bundle is not available (preview mode), a records-viewer copy is downloaded
-          instead. Publish and download from the live site for the full copy. After downloading, you can free space by
-          deleting the live records of the same dates.
+          Download a copy of the system as one file — same look as here, with the menu, coloured cards and all your
+          records for the chosen dates inside. It opens straight away on any PC with no internet. After downloading,
+          you can free space by deleting the live records of the same dates.
         </p>
+
         <div className="grid sm:grid-cols-2 gap-4">
           <div><Label>Date from</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
           <div><Label>Date to</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
