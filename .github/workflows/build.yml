@@ -20,13 +20,15 @@ jobs:
         bun-version: latest
 
     - name: Install dependencies
+      working-directory: ./client
       run: bun install
 
     - name: Build production bundle
+      working-directory: ./client
       run: bun run build
 
     - name: Upload dist folder artifact
       uses: actions/upload-artifact@v4
       with:
         name: production-dist
-        path: dist/
+        path: client/dist/
