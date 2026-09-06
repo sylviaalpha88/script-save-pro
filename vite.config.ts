@@ -5,7 +5,7 @@ import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
   // 💡 CRITICAL FIX: Forces Vite to handle the GitHub Pages repository subfolder URL path correctly
-  base: "/https://github.com/sylviaalpha88/script-save-pro/",
+  base: "/script-save-pro/",
   
   server: {
     host: "::",
