@@ -260,7 +260,7 @@ function cell(col: string, v: unknown): string {
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return new Date(`${s}T00:00:00`).toLocaleDateString();
   if (typeof v === "number" && MONEY.test(col)) return `KSh ${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   if (MONEY.test(col) && /^\d+(\.\d+)?$/.test(s)) return `KSh ${Number(s).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  return s.replace(/\b\w/g, m => m.toUpperCase()) === s ? s : s;
+  return s;
 }
 
 function tableHtml(rows: unknown[]): string {
