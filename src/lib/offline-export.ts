@@ -26,7 +26,7 @@ export async function collectArchive(pharmacyId: string | null, range: ExportRan
 
   const [
     sales, saleItems, buyerOrders, buyerOrderItems, drugs, stock, services, patients, buyers, reports, messages,
-    tracking, procurement, procurementItems, applicants,
+    tracking, procurement, procurementItems, applicants, archive, vacancies, staff,
   ] = await Promise.all([
     scoped("sales"),
     scoped("sale_items"),
@@ -43,6 +43,9 @@ export async function collectArchive(pharmacyId: string | null, range: ExportRan
     scoped("stock_orders"),
     scoped("stock_order_items"),
     scoped("vacancy_applications"),
+    scoped("stock_order_archive", "*", null),
+    scoped("vacancies", "*", null),
+    scoped("profiles", "username, role, is_director, can_edit_site, created_at", null),
   ]);
 
   return {
@@ -50,8 +53,10 @@ export async function collectArchive(pharmacyId: string | null, range: ExportRan
     drugs, pharmacy_stock: stock, services, patients, wholesale_buyers: buyers,
     accountant_reports: reports, messages, order_tracking_events: tracking,
     stock_orders: procurement, stock_order_items: procurementItems, vacancy_applications: applicants,
+    stock_order_archive: archive, vacancies, profiles: staff,
   };
 }
+
 
 const LABELS: Record<string, string> = {
   sales: "Retail & Wholesale Sales",
