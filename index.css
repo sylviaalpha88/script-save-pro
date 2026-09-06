@@ -4,28 +4,76 @@
 
 @layer base {
   :root {
-    --background: 210 33% 98%;
-    --foreground: 210 50% 10%;
+    /* 🏥 Professional Healthcare Palette (Light Mode) */
+    --background: 210 60% 99%;      /* Soft medical off-white */
+    --foreground: 222 47% 11%;      /* Deep professional slate text */
 
-    --card: 0 0% 100%;
-    --card-foreground: 210 50% 10%;
+    --card: 0 0% 100%;               /* Pure white dashboard cards */
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 50% 10%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 207 90% 42%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 142 70% 35%;         /* 🟢 Pharmacy Green / Clinical Trust Blue */
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 170 55% 45%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 213 90% 45%;       /* 🔵 Clean Medical Accent Blue */
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 210 25% 94%;
-    --muted-foreground: 210 15% 50%;
+    --muted: 210 40% 95%;           /* Soft grey for table borders */
+    --muted-foreground: 215 16% 47%;/* Calm text for sub-labels */
 
-    --accent: 207 85% 95%;
-    --accent-foreground: 207 90% 30%;
+    --accent: 142 70% 95%;          /* Very soft green highlight */
+    --accent-foreground: 142 70% 25%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;       /* 🔴 Alert Red for out-of-stock / critical alerts */
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 142 70% 35%;            /* Focus ring matching primary color */
+    --radius: 0.5rem;               /* Clean, modern rounded corners */
+  }
+
+  /* 🌙 Optional Dark Mode Settings (Uncomment if needed) */
+  /*
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --primary: 142 70% 45%;
+    --primary-foreground: 222.2 84% 4.9%;
+  }
+  */
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+/* 📊 Custom Utilities for Pharmacy Dashboards */
+@layer shortcuts {
+  /* Quick class to make dashboard panels look crisp and floating */
+  .dashboard-card {
+    @apply bg-card text-card-foreground rounded-lg border shadow-sm p-6 transition-all hover:shadow-md;
+  }
+  
+  /* Modern clean scrollbar for long medicine inventory tables */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/40;
   }
 }
