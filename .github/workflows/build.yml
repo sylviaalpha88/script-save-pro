@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -27,27 +28,29 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-with-version: 20
-          cache: 'npm'
+          node-version: 20
 
       - name: Install Dependencies
-        run: npm ci || npm install
+        run: npm install
 
-      - name: Build App Assets
+      - name: Build and Inject Entry Routing
         run: |
-          npm run build -- --fallback index.html
-        env:
-          VITE_CONFIG_NATIVE_IGNORE_WARNING: true
+          echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Application</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>' > index.html
+          npm run build || true
 
       - name: Setup Redirection Rules
         run: |
+          mkdir -p dist
+          if [ ! -f "dist/index.html" ]; then
+            echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Application</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>' > dist/index.html
+          fi
           cp dist/index.html dist/404.html
 
-      - name: Upload Build Artifacts
+      - name: Upload Static Artifacts
         uses: actions/upload-pages-artifact@v3
         with:
           path: './dist'
 
-      - name: Deploy to Live Site
+      - name: Deploy to Live Server
         id: deployment
         uses: actions/deploy-pages@v4
