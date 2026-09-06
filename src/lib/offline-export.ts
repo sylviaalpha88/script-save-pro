@@ -26,7 +26,7 @@ export async function collectArchive(pharmacyId: string | null, range: ExportRan
 
   const [
     sales, saleItems, buyerOrders, buyerOrderItems, drugs, stock, services, patients, buyers, reports, messages,
-    tracking, procurement, procurementItems, applicants,
+    tracking, procurement, procurementItems, applicants, archive, vacancies, staff,
   ] = await Promise.all([
     scoped("sales"),
     scoped("sale_items"),
@@ -43,6 +43,9 @@ export async function collectArchive(pharmacyId: string | null, range: ExportRan
     scoped("stock_orders"),
     scoped("stock_order_items"),
     scoped("vacancy_applications"),
+    scoped("stock_order_archive", "*", null),
+    scoped("vacancies", "*", null),
+    scoped("profiles", "username, role, is_director, can_edit_site, created_at", null),
   ]);
 
   return {
@@ -50,8 +53,10 @@ export async function collectArchive(pharmacyId: string | null, range: ExportRan
     drugs, pharmacy_stock: stock, services, patients, wholesale_buyers: buyers,
     accountant_reports: reports, messages, order_tracking_events: tracking,
     stock_orders: procurement, stock_order_items: procurementItems, vacancy_applications: applicants,
+    stock_order_archive: archive, vacancies, profiles: staff,
   };
 }
+
 
 const LABELS: Record<string, string> = {
   sales: "Retail & Wholesale Sales",
@@ -72,9 +77,31 @@ const LABELS: Record<string, string> = {
 };
 
 /** Same modules, same order, same wording and colours as the live left menu. */
-type Module = { key: string; label: string; subtitle: string; tone: string; text: string; tabs: { label: string; table: string }[] };
+type FormField = { label: string; kind?: "text" | "number" | "date" | "select" | "long" };
+type Tab = { label: string; table?: string; form?: { intro?: string; fields: FormField[]; button: string }; table2?: string };
+type Module = { key: string; label: string; subtitle: string; tone: string; text: string; tabs: Tab[] };
+
+const t = (label: string): FormField => ({ label, kind: "text" });
+const n = (label: string): FormField => ({ label, kind: "number" });
+const d = (label: string): FormField => ({ label, kind: "date" });
+const s = (label: string): FormField => ({ label, kind: "select" });
 
 const MODULES: Module[] = [
+  {
+    key: "sign_in", label: "Sign In", subtitle: "The same sign in screen you use on the website",
+    tone: "#f8fafc", text: "#0f172a",
+    tabs: [
+      {
+        label: "Sign In",
+        form: {
+          intro: "This offline copy is already unlocked. On the website you sign in here.",
+          fields: [t("Username"), t("Password")],
+          button: "Sign In",
+        },
+      },
+      { label: "Staff Accounts", table: "profiles" },
+    ],
+  },
   {
     key: "dashboard", label: "Dashboard", subtitle: "Sales, cash and M-Pesa summary for the saved dates",
     tone: "#f5f3ff", text: "#6d28d9",
@@ -88,9 +115,43 @@ const MODULES: Module[] = [
     key: "pharmacy", label: "Pharmacy", subtitle: "Manage medicines sales and pharmacy operations",
     tone: "#ecfdf5", text: "#047857",
     tabs: [
+      {
+        label: "Sell Retail (Record Bill)",
+        form: {
+          intro: "Retail sale screen. Prices come from the inventory selling prices saved in this copy.",
+          fields: [t("Patient Name"), n("Age"), t("Patient Number"), s("Item"), n("Quantity"), n("Unit Price"), n("Amount Received"), s("Paid By (Cash / M-Pesa)")],
+          button: "Record Bill & Print Invoice",
+        },
+        table2: "sales",
+      },
+      {
+        label: "Sell Wholesale",
+        form: {
+          intro: "Wholesale sale screen. Add items until the maximum, then print the invoice.",
+          fields: [s("Wholesale Buyer"), s("Item"), n("Quantity"), n("Wholesale Unit Price"), n("Amount Received"), s("Paid By (Cash / M-Pesa)")],
+          button: "Record Sale & Print Invoice",
+        },
+        table2: "sale_items",
+      },
+      {
+        label: "Register Buyer",
+        form: {
+          intro: "Create a wholesale buyer account.",
+          fields: [t("Buyer Name"), t("ID Number"), t("Phone"), t("Email"), t("Location"), t("License Number"), t("License PDF")],
+          button: "Register Buyer",
+        },
+        table2: "wholesale_buyers",
+      },
+      {
+        label: "Make Order",
+        form: {
+          intro: "Place an order for a wholesale buyer.",
+          fields: [s("Wholesale Buyer"), s("Item"), n("Quantity Requested"), n("Unit Price"), s("Payment (Paid / Partial / Unpaid)"), n("Amount Paid")],
+          button: "Save Order",
+        },
+        table2: "buyer_order_items",
+      },
       { label: "Buyers Order", table: "buyer_orders" },
-      { label: "Make Order (Items Ordered)", table: "buyer_order_items" },
-      { label: "Register Buyer", table: "wholesale_buyers" },
       { label: "Today", table: "sales" },
       { label: "History", table: "sale_items" },
       { label: "Retail (Patients)", table: "patients" },
@@ -103,18 +164,60 @@ const MODULES: Module[] = [
     key: "procurement", label: "Procurement", subtitle: "Stock orders, counter stock and requests",
     tone: "#fffbeb", text: "#b45309",
     tabs: [
-      { label: "Add Procurement", table: "stock_orders" },
-      { label: "Receive Procurement", table: "stock_order_items" },
+      {
+        label: "Add Procurement",
+        form: {
+          intro: "Add a new inventory item with its supplier, cost and stock levels.",
+          fields: [
+            t("Item Name"), t("Code"), t("Category"), t("Department"), t("Measurement"), s("Unit"),
+            n("Buying Price"), n("Retail Price"), n("Wholesale Price"), n("Wholesale Minimum Qty"),
+            n("Minimum"), n("Average"), n("Maximum"), n("Reorder Level"),
+            t("Supplier"), t("Supplier Reference"), n("Lead Time (days)"), t("PO Number"), t("Invoice / Note Number"),
+            n("Unit Cost"), n("Tax / VAT"), n("Freight Cost"), n("Quantity Ordered"),
+            t("Batch Number"), d("Manufactured"), d("Expires"), t("Storage Location"), s("Quality"),
+          ],
+          button: "Save Procurement",
+        },
+        table2: "drugs",
+      },
+      {
+        label: "Receive Procurement",
+        form: {
+          intro: "Record what actually arrived from the supplier.",
+          fields: [s("Item"), n("Quantity Received"), t("Batch Number"), d("Expires"), s("Quality"), t("Storage Location")],
+          button: "Receive Stock",
+        },
+        table2: "stock_order_items",
+      },
+      {
+        label: "Request From Pharmacy",
+        form: {
+          intro: "The pharmacy counter requests stock from the store; procurement approves or rejects it.",
+          fields: [s("Item"), n("Quantity"), t("Requested By"), { label: "Note", kind: "long" }],
+          button: "Send Request",
+        },
+        table2: "stock_orders",
+      },
       { label: "Requested Items", table: "stock_order_items" },
       { label: "Inventory Items", table: "drugs" },
       { label: "Pharmacy Counter Stock", table: "pharmacy_stock" },
       { label: "Requests History", table: "stock_orders" },
+      { label: "Moved / Archived Orders", table: "stock_order_archive" },
     ],
   },
   {
     key: "accountant", label: "Accountant", subtitle: "Cash received, M-Pesa received and daily reconciliation",
     tone: "#fff1f2", text: "#be123c",
     tabs: [
+      {
+        label: "Record Daily Report",
+        form: {
+          intro: "Enter the cash and M-Pesa actually received for the day.",
+          fields: [d("Report Date"), n("Cash Received"), n("M-Pesa Received"), { label: "Notes", kind: "long" }],
+          button: "Save Daily Report",
+        },
+        table2: "accountant_reports",
+      },
       { label: "Daily Reports", table: "accountant_reports" },
       { label: "Sales Received", table: "sales" },
       { label: "Sold Items", table: "sale_items" },
@@ -124,6 +227,15 @@ const MODULES: Module[] = [
     key: "order_track", label: "Order Track", subtitle: "Tracked buyer orders and recorded tracking points",
     tone: "#f0f9ff", text: "#0369a1",
     tabs: [
+      {
+        label: "Record Tracking Point",
+        form: {
+          intro: "Record where a buyer's order has reached.",
+          fields: [s("Buyer Order"), t("Place"), n("Latitude"), n("Longitude"), { label: "Note", kind: "long" }],
+          button: "Record Tracking Point",
+        },
+        table2: "order_tracking_events",
+      },
       { label: "Buyers Orders", table: "buyer_orders" },
       { label: "Items In Orders", table: "buyer_order_items" },
       { label: "Tracking Points", table: "order_tracking_events" },
@@ -133,37 +245,93 @@ const MODULES: Module[] = [
     key: "public_site", label: "Public Site", subtitle: "Wholesale buyer accounts shown on the public site",
     tone: "#eef2ff", text: "#4338ca",
     tabs: [
+      {
+        label: "Register Buyer",
+        form: {
+          intro: "Buyer registration used on the public site.",
+          fields: [t("Buyer Name"), t("ID Number"), t("Phone"), t("Email"), t("Location"), t("License Number")],
+          button: "Register Buyer",
+        },
+        table2: "wholesale_buyers",
+      },
       { label: "Wholesale Buyer Accounts", table: "wholesale_buyers" },
-      { label: "Register Buyer", table: "wholesale_buyers" },
     ],
   },
 
   {
     key: "admin_settings", label: "Admin Settings", subtitle: "Pharmacy information saved with this copy",
     tone: "#eff6ff", text: "#1d4ed8",
-    tabs: [{ label: "Pharmacy Information", table: "__brand" }],
+    tabs: [
+      { label: "Pharmacy Information", table: "__brand" },
+      {
+        label: "Add Staff",
+        form: {
+          intro: "Create a pharmacy, procurement, accountant or order track account.",
+          fields: [t("Username"), t("Password"), s("Role"), s("Allowed Departments")],
+          button: "Add User",
+        },
+        table2: "profiles",
+      },
+    ],
   },
   {
     key: "messages", label: "Messages", subtitle: "Messages sent and received in these dates",
     tone: "#f0fdfa", text: "#0f766e",
-    tabs: [{ label: "Messages", table: "messages" }],
+    tabs: [
+      {
+        label: "Send Message",
+        form: { intro: "Send an SMS to buyers or staff.", fields: [t("Sent To"), t("Phone"), { label: "Message", kind: "long" }], button: "Send Message" },
+        table2: "messages",
+      },
+      { label: "Messages", table: "messages" },
+    ],
   },
   {
-    key: "vacancy", label: "Vacancy", subtitle: "Applicants recorded in these dates",
+    key: "vacancy", label: "Vacancy", subtitle: "Vacancies and applicants recorded in these dates",
     tone: "#fdf4ff", text: "#a21caf",
-    tabs: [{ label: "Applicants", table: "vacancy_applications" }],
+    tabs: [
+      {
+        label: "Add Applicant",
+        form: {
+          intro: "Record an applicant for an open vacancy.",
+          fields: [s("Vacancy"), t("Applicant"), t("Email"), t("Phone"), t("Application Letter"), t("CV"), t("Certificates")],
+          button: "Save Applicant",
+        },
+        table2: "vacancy_applications",
+      },
+      { label: "Vacancies", table: "vacancies" },
+      { label: "Applicants", table: "vacancy_applications" },
+    ],
   },
   {
     key: "service_stock", label: "Service Stock", subtitle: "Services with retail and wholesale selling prices",
     tone: "#f7fee7", text: "#4d7c0f",
-    tabs: [{ label: "Current Service", table: "services" }],
+    tabs: [
+      {
+        label: "Add Service",
+        form: { intro: "Add a service with its prices.", fields: [t("Name"), s("Unit"), n("Retail Price"), n("Wholesale Price")], button: "Save Service" },
+        table2: "services",
+      },
+      { label: "Current Service", table: "services" },
+    ],
   },
   {
     key: "pharm_branding", label: "Pharm Branding", subtitle: "Logo and pharmacy details used on every printed PDF",
     tone: "#fff7ed", text: "#e11d48",
-    tabs: [{ label: "Branding", table: "__brand" }],
+    tabs: [
+      { label: "Branding", table: "__brand" },
+      {
+        label: "Edit Branding",
+        form: {
+          intro: "Logo and details printed on every invoice and report.",
+          fields: [t("Pharmacy Name"), t("Logo"), t("Postal Address"), t("Location"), t("Phone"), t("Email")],
+          button: "Save Branding",
+        },
+      },
+    ],
   },
 ];
+
 
 /** Friendly words for every column shown in the offline copy. */
 const COLUMN_LABELS: Record<string, string> = {
