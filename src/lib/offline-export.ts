@@ -89,11 +89,14 @@ const MODULES: Module[] = [
     tone: "#ecfdf5", text: "#047857",
     tabs: [
       { label: "Buyers Order", table: "buyer_orders" },
+      { label: "Make Order (Items Ordered)", table: "buyer_order_items" },
+      { label: "Register Buyer", table: "wholesale_buyers" },
       { label: "Today", table: "sales" },
       { label: "History", table: "sale_items" },
-      { label: "Retail", table: "patients" },
+      { label: "Retail (Patients)", table: "patients" },
       { label: "Wholesale", table: "wholesale_buyers" },
       { label: "Pharmacy Store", table: "pharmacy_stock" },
+      { label: "Service Stock", table: "services" },
     ],
   },
   {
@@ -101,9 +104,11 @@ const MODULES: Module[] = [
     tone: "#fffbeb", text: "#b45309",
     tabs: [
       { label: "Add Procurement", table: "stock_orders" },
+      { label: "Receive Procurement", table: "stock_order_items" },
       { label: "Requested Items", table: "stock_order_items" },
       { label: "Inventory Items", table: "drugs" },
       { label: "Pharmacy Counter Stock", table: "pharmacy_stock" },
+      { label: "Requests History", table: "stock_orders" },
     ],
   },
   {
@@ -112,6 +117,7 @@ const MODULES: Module[] = [
     tabs: [
       { label: "Daily Reports", table: "accountant_reports" },
       { label: "Sales Received", table: "sales" },
+      { label: "Sold Items", table: "sale_items" },
     ],
   },
   {
@@ -119,14 +125,19 @@ const MODULES: Module[] = [
     tone: "#f0f9ff", text: "#0369a1",
     tabs: [
       { label: "Buyers Orders", table: "buyer_orders" },
+      { label: "Items In Orders", table: "buyer_order_items" },
       { label: "Tracking Points", table: "order_tracking_events" },
     ],
   },
   {
     key: "public_site", label: "Public Site", subtitle: "Wholesale buyer accounts shown on the public site",
     tone: "#eef2ff", text: "#4338ca",
-    tabs: [{ label: "Wholesale Buyer Accounts", table: "wholesale_buyers" }],
+    tabs: [
+      { label: "Wholesale Buyer Accounts", table: "wholesale_buyers" },
+      { label: "Register Buyer", table: "wholesale_buyers" },
+    ],
   },
+
   {
     key: "admin_settings", label: "Admin Settings", subtitle: "Pharmacy information saved with this copy",
     tone: "#eff6ff", text: "#1d4ed8",
