@@ -154,15 +154,127 @@ const MODULES: Module[] = [
   },
 ];
 
+/** Friendly words for every column shown in the offline copy. */
+const COLUMN_LABELS: Record<string, string> = {
+  sale_type: "Sale Type",
+  customer_name: "Customer",
+  patient_name: "Patient",
+  drug_name: "Item",
+  quantity: "Quantity",
+  requested_qty: "Quantity Requested",
+  approved_qty: "Quantity Approved",
+  unit_price: "Unit Price",
+  subtotal: "Subtotal",
+  total: "Total",
+  amount_paid: "Amount Received",
+  payment_method: "Paid By",
+  payment_status: "Payment",
+  cash: "Cash Received",
+  mpesa: "M-Pesa Received",
+  created_at: "Date",
+  updated_at: "Last Updated",
+  decided_at: "Decided On",
+  moved_at: "Moved On",
+  stock_quantity: "In Store",
+  min_stock: "Minimum",
+  avg_stock: "Average",
+  max_stock: "Maximum",
+  reorder_level: "Reorder Level",
+  buying_price: "Buying Price",
+  selling_price: "Selling Price",
+  selling_price_retail: "Retail Price",
+  selling_price_wholesale: "Wholesale Price",
+  wholesale_min_qty: "Wholesale Minimum Qty",
+  measurement_per_item: "Measurement",
+  supplier_name: "Supplier",
+  lead_time_days: "Lead Time (days)",
+  unit_cost: "Unit Cost",
+  tax_vat: "Tax / VAT",
+  freight_cost: "Freight Cost",
+  computed_total: "Computed Total",
+  qty_ordered: "Quantity Ordered",
+  qty_received: "Quantity Received",
+  batch_number: "Batch Number",
+  manufacture_date: "Manufactured",
+  expiry_date: "Expires",
+  storage_location: "Storage Location",
+  quality_status: "Quality",
+  requested_by_name: "Requested By",
+  reject_reason: "Reason",
+  flagged_out_of_stock: "Out Of Stock",
+  recipient_name: "Sent To",
+  recipient_phone: "Phone",
+  body: "Message",
+  status: "Status",
+  note: "Note",
+  notes: "Notes",
+  location_name: "Place",
+  latitude: "Latitude",
+  longitude: "Longitude",
+  applicant_name: "Applicant",
+  id_number: "ID Number",
+  license_number: "License Number",
+  name: "Name",
+  phone: "Phone",
+  email: "Email",
+  location: "Location",
+  age: "Age",
+  patient_code: "Patient Number",
+  report_date: "Report Date",
+  unit: "Unit",
+  sku: "Code",
+  category: "Category",
+  department: "Department",
+  description: "Description",
+  remaining: "Remaining",
+  order_qty: "Order Quantity",
+  level: "Level",
+  archived_at: "Archived On",
+};
+
+/** Columns that only hold machine references — never shown in the offline copy. */
+const isHiddenColumn = (c: string) =>
+  c === "id" ||
+  c.endsWith("_id") ||
+  c.endsWith("_by") ||
+  c.endsWith("_path") ||
+  c.endsWith("_paths") ||
+  c === "provider_response" ||
+  c === "at_api_key";
+
+const MONEY = /(price|total|cash|mpesa|paid|cost|subtotal|vat)/i;
+
+const label = (c: string) =>
+  COLUMN_LABELS[c] ?? c.replace(/_/g, " ").replace(/\b\w/g, m => m.toUpperCase());
+
+function cell(col: string, v: unknown): string {
+  if (v === null || v === undefined || v === "") return "—";
+  if (typeof v === "boolean") return v ? "Yes" : "No";
+  if (Array.isArray(v)) return v.length ? v.map(x => String(x)).join(", ") : "—";
+  if (typeof v === "object") return "—";
+  const s = String(v);
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
+    const d = new Date(s);
+    return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return new Date(`${s}T00:00:00`).toLocaleDateString();
+  if (typeof v === "number" && MONEY.test(col)) return `KSh ${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (MONEY.test(col) && /^\d+(\.\d+)?$/.test(s)) return `KSh ${Number(s).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return s.replace(/\b\w/g, m => m.toUpperCase()) === s ? s : s;
+}
+
 function tableHtml(rows: unknown[]): string {
   if (rows.length === 0) return `<p class="empty">No records saved for these dates.</p>`;
-  const cols = Object.keys(rows[0] as Record<string, unknown>);
-  const head = cols.map(c => `<th>${esc(c.replace(/_/g, " ").replace(/\b\w/g, m => m.toUpperCase()))}</th>`).join("");
+  const all = Object.keys(rows[0] as Record<string, unknown>);
+  const cols = all.filter(c => !isHiddenColumn(c));
+  const shown = cols.length ? cols : all;
+  const head = shown.map(c => `<th>${esc(label(c))}</th>`).join("");
   const body = rows
-    .map(r => `<tr>${cols.map(c => `<td>${esc((r as Record<string, unknown>)[c])}</td>`).join("")}</tr>`)
+    .map(r => `<tr>${shown.map(c => `<td>${esc(cell(c, (r as Record<string, unknown>)[c]))}</td>`).join("")}</tr>`)
     .join("");
   return `<div class="scroll"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
 }
+
 
 /**
  * Build one self-contained HTML file that looks exactly like the live system
