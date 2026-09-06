@@ -42,14 +42,14 @@ export async function collectArchive(pharmacyId: string | null, range: ExportRan
     scoped("order_tracking_events"),
     scoped("stock_orders"),
     scoped("stock_order_items"),
-    scoped("applicants"),
+    scoped("vacancy_applications"),
   ]);
 
   return {
     sales, sale_items: saleItems, buyer_orders: buyerOrders, buyer_order_items: buyerOrderItems,
     drugs, pharmacy_stock: stock, services, patients, wholesale_buyers: buyers,
     accountant_reports: reports, messages, order_tracking_events: tracking,
-    stock_orders: procurement, stock_order_items: procurementItems, applicants,
+    stock_orders: procurement, stock_order_items: procurementItems, vacancy_applications: applicants,
   };
 }
 
@@ -68,7 +68,7 @@ const LABELS: Record<string, string> = {
   order_tracking_events: "Order Tracking",
   stock_orders: "Procurement Requests",
   stock_order_items: "Requested Items",
-  applicants: "Vacancy Applicants",
+  vacancy_applications: "Vacancy Applicants",
 };
 
 /** Same modules, same order, same wording and colours as the live left menu. */
@@ -140,7 +140,7 @@ const MODULES: Module[] = [
   {
     key: "vacancy", label: "Vacancy", subtitle: "Applicants recorded in these dates",
     tone: "#fdf4ff", text: "#a21caf",
-    tabs: [{ label: "Applicants", table: "applicants" }],
+    tabs: [{ label: "Applicants", table: "vacancy_applications" }],
   },
   {
     key: "service_stock", label: "Service Stock", subtitle: "Services with retail and wholesale selling prices",

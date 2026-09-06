@@ -7,6 +7,10 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
+  // Final production files land in dist/ (dist/client + dist/server), not .output/.
+  nitro: {
+    output: { dir: "dist", publicDir: "dist/client", serverDir: "dist/server" },
+  },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
