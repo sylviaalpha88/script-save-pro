@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Deploy Standalone Application
 
 on:
   push:
@@ -22,27 +22,27 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Initialize Node.js Environment
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install Dependencies
+      - name: Install Project Dependencies
         run: npm install
 
       - name: Build and Inject Entry Routing
         run: |
-          echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Application</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>' > index.html
+          echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>LEMSA Pharmacy Management System</title></head><body><div id="root"></div><script type="module" src="/src/start.ts"></script></body></html>' > index.html
           npm run build || true
 
       - name: Setup Redirection Rules
         run: |
           mkdir -p dist
           if [ ! -f "dist/index.html" ]; then
-            echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Application</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>' > dist/index.html
+            echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="/favicon.ico"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>LEMSA Pharmacy Management System</title></head><body><div id="root"></div><script type="module" src="/src/start.ts"></script></body></html>' > dist/index.html
           fi
           cp dist/index.html dist/404.html
 
@@ -51,6 +51,6 @@ jobs:
         with:
           path: './dist'
 
-      - name: Deploy to Live Server
+      - name: Deploy to Live Site
         id: deployment
         uses: actions/deploy-pages@v4
