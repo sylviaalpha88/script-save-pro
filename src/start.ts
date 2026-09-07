@@ -1,11 +1,25 @@
-import { createStartHandler, defaultStreamHandler } from '@tanstack/start/server'
-import { getRouter } from './router'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import path from "path";
 
-// ⚡ Dynamic entry execution engine for TanStack Start
-const router = getRouter()
-const handler = createStartHandler({
-  createRouter: getRouter,
-  defaultStreamHandler,
-})
-
-export default handler
+// https://vitejs.dev
+export default defineConfig({
+  base: "/script-save-pro/",
+  server: {
+    host: "::",
+    port: 8080,
+  },
+  plugins: [
+    react()
+  ],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
+  // ⚡ STATIC CAPTURE ENGINE: Forces Vite to render as a standalone client application
+  build: {
+    ssr: false,
+    outDir: "dist",
+  }
+});
