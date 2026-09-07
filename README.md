@@ -1,26 +1,39 @@
-# Pharmacy Hub
+# 🌐 Website System Architecture & Portal Directory
 
-need a pharmacy website with title LEMSA PHARMACY MANAGEMENT SYSTEM with  following logins admin, pharmacy and enventory, at admin logins  USERNAME is Admin and password is 123456789, admin can add the pharmacy, inventory personal with their username and password, at admin dashboard add place where admin can view sales as retailers and sales as whole sale, the total sales per items per day history , the sales as retail and whole sale can be searched by date from to date, at inventory add place to manage stocks where you add new stocks of drug and entering the buying price per tabs or caps or per piece and also at inventory enter place to enter the selling price per tabor cap or per piece, at inventory enter place where to set the lower number of drugs available on stock when it is below the minimun number it turns red, at pharmacy creat place for wholesalers and reailer, at retail add place to enter patient name age and id only and place to enter priscribtion or add drug after adding you can generate invoice , at wholesales add place to enter by searching and selecting the type of drug and add when maximum number is added you can generate invoice ,the invoice generated shoud reflect automatic the saling price added at inventory automatic.
+## 📋 Department Portals & Login URLs
 
-This project was built with [Lovable](https://lovable.dev).
+| Department | URL / Login Path | Access Level |
+| :--- | :--- | :--- |
+| **Admin Dashboard** | `https://example.com` | Super Admin / IT |
+| **HR / Staff Portal** | `https://example.com` | Employees |
+| **Customer Portal** | `https://example.com` | Public Users |
+| **API Gateway** | `https://example.com` | Developers |
 
-**Live app**: https://script-save-pro.lovable.app
+---
 
-## Build with Lovable
+## 🏗️ Repository Directory Structure
+*   📁 `/src` — Core application source code.
+*   📁 `/config` — System environment templates.
+*   📁 `/docs` — Detailed department workflows and API manuals.
+*   📁 `/dist` — Final optimized production build files (Generated after build).
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/f1ba6500-7b74-4eb9-9cc6-e61ce4832534).
+---
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+## 🚀 Final Run & Deployment Instructions
+Follow these steps to compile the system and generate the final `dist` folder:
 
-## Development
+### 1. Prerequisites
+Ensure you have [Node.js](https://nodejs.org) installed.
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+### 2. Installation
+Install all required project dependencies:
+\`\`\`bash
+npm install
+\`\`\`
 
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
-```
+### 3. Production Build
+Run the compilation script to generate the production-ready `dist` folder:
+\`\`\`bash
+npm run build
+\`\`\`
+The compiled assets will appear in the root `/dist` directory, ready to be uploaded to your web server.
