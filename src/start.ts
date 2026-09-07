@@ -1,25 +1,18 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import path from "path";
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import { RouterProvider } from '@tanstack/react-router'
+import { getRouter } from './router'
+import './styles.css'
 
-// https://vitejs.dev
-export default defineConfig({
-  base: "/script-save-pro/",
-  server: {
-    host: "::",
-    port: 8080,
-  },
-  plugins: [
-    react()
-  ],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
-  // ⚡ STATIC CAPTURE ENGINE: Forces Vite to render as a standalone client application
-  build: {
-    ssr: false,
-    outDir: "dist",
-  }
-});
+const router = getRouter()
+
+// Mount the system engine cleanly into the index canvas container
+const rootElement = document.getElementById('root')
+if (rootElement && !rootElement.innerHTML) {
+  const root = ReactDOM.createRoot(rootElement)
+  root.render(
+    React.createElement(React.StrictMode, null,
+      React.createElement(RouterProvider, { router: router })
+    )
+  )
+}
