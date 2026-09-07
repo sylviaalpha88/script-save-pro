@@ -1,25 +1,11 @@
-import './styles.css';
-import { createStart, createMiddleware } from "@tanstack/react-start";
+import { createStartHandler, defaultStreamHandler } from '@tanstack/start/server'
+import { getRouter } from './router'
 
-import { renderErrorPage } from "./lib/error-page";
-import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
+// ⚡ Dynamic entry execution engine for TanStack Start
+const router = getRouter()
+const handler = createStartHandler({
+  createRouter: getRouter,
+  defaultStreamHandler,
+})
 
-const errorMiddleware = createMiddleware().server(async ({ next }) => {
-  try {
-    return await next();
-  } catch (error) {
-    if (error != null && typeof error === "object" && "statusCode" in error) {
-      throw error;
-    }
-    console.error(error);
-    return new Response(renderErrorPage(), {
-      status: 500,
-      headers: { "content-type": "text/html; charset=utf-8" },
-    });
-  }
-});
-
-export const startInstance = createStart(() => ({
-  functionMiddleware: [attachSupabaseAuth],
-  requestMiddleware: [errorMiddleware],
-}));
+export default handler
