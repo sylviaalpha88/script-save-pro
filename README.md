@@ -1,39 +1,44 @@
-# 🌐 Website System Architecture & Portal Directory
+# 🏥 LEMSA Pharmacy Management System
 
-## 📋 Department Portals & Login URLs
-
-| Department | URL / Login Path | Access Level |
-| :--- | :--- | :--- |
-| **Admin Dashboard** | `https://example.com` | Super Admin / IT |
-| **HR / Staff Portal** | `https://example.com` | Employees |
-| **Customer Portal** | `https://example.com` | Public Users |
-| **API Gateway** | `https://example.com` | Developers |
+Welcome to the central repository for the **LEMSA Pharmacy Management System**. This project is built using TanStack Start, TypeScript, and Bun, with database integration powered by Supabase.
 
 ---
 
-## 🏗️ Repository Directory Structure
-*   📁 `/src` — Core application source code.
-*   📁 `/config` — System environment templates.
-*   📁 `/docs` — Detailed department workflows and API manuals.
-*   📁 `/dist` — Final optimized production build files (Generated after build).
+## 🌐 Live System Directory & Portals
+
+Click the links below to access the individual staging environments for each department:
+
+*   **🔑 Main Portal / User Login**: [Open System Portal](https://github.io)
+*   **👨‍💼 Admin Department**: [Admin Login Dashboard](https://github.ioadmin/login)
+*   **👥 HR / Employee Department**: [Staff Dashboard](https://github.iohr/dashboard)
+*   **💰 Sales & Billing Department**: [Sales Point of Sale](https://github.iosales/auth)
+*   **🛠️ IT & System Support**: [Technical Assistance](https://github.iosupport)
 
 ---
 
-## 🚀 Final Run & Deployment Instructions
-Follow these steps to compile the system and generate the final `dist` folder:
+## 📦 Project Architecture & Directories
+*   📁 `/.github/workflows` — Contains `build.yml` for automated GitHub Pages hosting.
+*   📁 `/src` — Core application routing, layouts, and pharmacy modules.
+*   📁 `/supabase` — Local backend database tables, triggers, and security.
+*   📄 `/env.example` — Public global routing matrix configuration.
 
-### 1. Prerequisites
-Ensure you have [Node.js](https://nodejs.org) installed.
+---
 
-### 2. Installation
-Install all required project dependencies:
-\`\`\`bash
-npm install
-\`\`\`
+## 🚀 How to Run locally and Compile to `dist`
 
-### 3. Production Build
-Run the compilation script to generate the production-ready `dist` folder:
-\`\`\`bash
-npm run build
-\`\`\`
-The compiled assets will appear in the root `/dist` directory, ready to be uploaded to your web server.
+### 1. Installation
+Install project tools using the **Bun** package manager:
+```bash
+bun install
+```
+
+### 2. Run Development Server
+```bash
+bun run dev
+```
+
+### 3. Generate Final Production Output (`dist`)
+To compile the absolute final code package files into your distribution build directory:
+```bash
+bun run build
+```
