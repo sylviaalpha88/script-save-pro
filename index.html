@@ -2,13 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/script-save-pro/favicon.ico" />
+    <!-- ⚡ RELATIVE PATH FIX: Notice the dot (.) before the slash -->
+    <link rel="icon" type="image/svg+xml" href="./favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LEMSA Pharmacy Management System</title>
   </head>
   <body>
     <div id="root"></div>
-    <!-- ⚡ Dynamic Script Path: Connects directly to your entry script -->
-    <script type="module" src="/src/start.tsx"></script>
+    <!-- ⚡ RELATIVE PATH FIX: Changes absolute /src/ to relative ./src/ -->
+    <script type="module" src="./src/start.tsx"></script>
   </body>
 </html>
