@@ -5,7 +5,6 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev
 export default defineConfig(({ mode }) => ({
-  // Forces Vite to prefix all asset imports with your exact repository path name
   base: "/script-save-pro/",
   server: {
     host: "::",
