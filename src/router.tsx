@@ -10,8 +10,6 @@ export const getRouter = () => {
     context: { queryClient },
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
-    // CRITICAL FIX: Forces TanStack Router to listen to the GitHub Pages repository subfolder URL path correctly
-    basepath: "/script-save-pro",
   });
 
   return router;

@@ -1,44 +1,26 @@
-# 🏥 LEMSA Pharmacy Management System
+# Pharmacy Hub
 
-Welcome to the central repository for the **LEMSA Pharmacy Management System**. This project is built using TanStack Start, TypeScript, and Bun, with database integration powered by Supabase.
+need a pharmacy website with title LEMSA PHARMACY MANAGEMENT SYSTEM with  following logins admin, pharmacy and enventory, at admin logins  USERNAME is Admin and password is 123456789, admin can add the pharmacy, inventory personal with their username and password, at admin dashboard add place where admin can view sales as retailers and sales as whole sale, the total sales per items per day history , the sales as retail and whole sale can be searched by date from to date, at inventory add place to manage stocks where you add new stocks of drug and entering the buying price per tabs or caps or per piece and also at inventory enter place to enter the selling price per tabor cap or per piece, at inventory enter place where to set the lower number of drugs available on stock when it is below the minimun number it turns red, at pharmacy creat place for wholesalers and reailer, at retail add place to enter patient name age and id only and place to enter priscribtion or add drug after adding you can generate invoice , at wholesales add place to enter by searching and selecting the type of drug and add when maximum number is added you can generate invoice ,the invoice generated shoud reflect automatic the saling price added at inventory automatic.
 
----
+This project was built with [Lovable](https://lovable.dev).
 
-## 🌐 Live System Directory & Portals
+**Live app**: https://script-save-pro.lovable.app
 
-Click the links below to access the individual staging environments for each department:
+## Build with Lovable
 
-*   **🔑 Main Portal / User Login**: [Open System Portal](https://github.io)
-*   **👨‍💼 Admin Department**: [Admin Login Dashboard](https://github.ioadmin/login)
-*   **👥 HR / Employee Department**: [Staff Dashboard](https://github.iohr/dashboard)
-*   **💰 Sales & Billing Department**: [Sales Point of Sale](https://github.iosales/auth)
-*   **🛠️ IT & System Support**: [Technical Assistance](https://github.iosupport)
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/f1ba6500-7b74-4eb9-9cc6-e61ce4832534).
 
----
+- **Ship faster**: describe what you want to build and Lovable handles the code.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
-## 📦 Project Architecture & Directories
-*   📁 `/.github/workflows` — Contains `build.yml` for automated GitHub Pages hosting.
-*   📁 `/src` — Core application routing, layouts, and pharmacy modules.
-*   📁 `/supabase` — Local backend database tables, triggers, and security.
-*   📄 `/env.example` — Public global routing matrix configuration.
+## Development
 
----
+Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
-## 🚀 How to Run locally and Compile to `dist`
-
-### 1. Installation
-Install project tools using the **Bun** package manager:
-```bash
-bun install
-```
-
-### 2. Run Development Server
-```bash
-bun run dev
-```
-
-### 3. Generate Final Production Output (`dist`)
-To compile the absolute final code package files into your distribution build directory:
-```bash
-bun run build
+```sh
+git clone <this-repository-url>
+cd <repository-name>
+npm i
+npm run dev
 ```
