@@ -552,6 +552,10 @@ function buildViewer(data: ArchiveData, range: ExportRange): string {
  tbody tr:hover{background:#f8fafc}
  .empty{color:#64748b;font-size:14px;margin:8px 0}
  .note{margin-top:14px;font-size:12px;color:#64748b}
+ .form .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:14px}
+ .fld{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:600;color:#334155}
+ .fld.wide{grid-column:1/-1}
+ .fld input,.fld select,.fld textarea{border:1px solid #cbd5e1;border-radius:10px;padding:9px 10px;font:inherit;font-weight:400;background:#fff}
  @media (max-width:860px){.layout{flex-direction:column}aside{width:auto;flex:none;border-right:0;border-bottom:1px solid #e5e7eb}}
  @media print{aside,.tiles,.tabs,.btn,header .who{display:none}.scroll{max-height:none;overflow:visible}.page{padding:0}body{background:#fff}}
 </style></head><body>
@@ -603,7 +607,7 @@ MODULES.forEach(function(m,i){
   var b=document.createElement('button');b.dataset.k=m.key;b.style.color=m.text;
   b.innerHTML='<span class="dot" style="background:'+m.text+'"></span>'+m.label;
   b.onclick=function(){go(m.key);};nav.appendChild(b);
-  if(i===6)nav.appendChild(document.createElement('hr'));
+  if(i===7)nav.appendChild(document.createElement('hr'));
   var t=document.createElement('div');t.className='tile';t.style.background=m.tone;t.style.color=m.text;
   t.innerHTML=m.label+'<small>'+COUNTS[m.key]+' records</small>';t.onclick=function(){go(m.key);};tiles.appendChild(t);
 });
