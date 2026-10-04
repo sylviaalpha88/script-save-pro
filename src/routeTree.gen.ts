@@ -9,94 +9,29 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AccountantRouteImport } from './routes/accountant'
-import { Route as AdminRouteImport } from './routes/admin'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as BuyerRouteImport } from './routes/buyer'
-import { Route as DirectorRouteImport } from './routes/director'
-import { Route as HomeRouteImport } from './routes/home'
-import { Route as InventoryRouteImport } from './routes/inventory'
-import { Route as MessagesRouteImport } from './routes/messages'
-import { Route as OrderTrackRouteImport } from './routes/order-track'
-import { Route as PharmBrandingRouteImport } from './routes/pharm-branding'
-import { Route as PharmacyRouteImport } from './routes/pharmacy'
-import { Route as ProcurementRouteImport } from './routes/procurement'
-import { Route as PublicSiteRouteImport } from './routes/public-site'
-import { Route as RegisterRouteImport } from './routes/register'
 import { Route as VacancyRouteImport } from './routes/vacancy'
-import { Route as BuyerInvoiceIdRouteImport } from './routes/buyer-invoice.$id'
-import { Route as DocIdRouteImport } from './routes/doc.$id'
+import { Route as RegisterRouteImport } from './routes/register'
+import { Route as PublicSiteRouteImport } from './routes/public-site'
+import { Route as ProcurementRouteImport } from './routes/procurement'
+import { Route as PharmacyRouteImport } from './routes/pharmacy'
+import { Route as PharmBrandingRouteImport } from './routes/pharm-branding'
+import { Route as OrderTrackRouteImport } from './routes/order-track'
+import { Route as MessagesRouteImport } from './routes/messages'
+import { Route as InventoryRouteImport } from './routes/inventory'
+import { Route as HomeRouteImport } from './routes/home'
+import { Route as DirectorRouteImport } from './routes/director'
+import { Route as BuyerRouteImport } from './routes/buyer'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AccountantRouteImport } from './routes/accountant'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as InvoiceIdRouteImport } from './routes/invoice.$id'
+import { Route as DocIdRouteImport } from './routes/doc.$id'
+import { Route as BuyerInvoiceIdRouteImport } from './routes/buyer-invoice.$id'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AccountantRoute = AccountantRouteImport.update({
-  id: '/accountant',
-  path: '/accountant',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BuyerRoute = BuyerRouteImport.update({
-  id: '/buyer',
-  path: '/buyer',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DirectorRoute = DirectorRouteImport.update({
-  id: '/director',
-  path: '/director',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HomeRoute = HomeRouteImport.update({
-  id: '/home',
-  path: '/home',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const InventoryRoute = InventoryRouteImport.update({
-  id: '/inventory',
-  path: '/inventory',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MessagesRoute = MessagesRouteImport.update({
-  id: '/messages',
-  path: '/messages',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OrderTrackRoute = OrderTrackRouteImport.update({
-  id: '/order-track',
-  path: '/order-track',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PharmBrandingRoute = PharmBrandingRouteImport.update({
-  id: '/pharm-branding',
-  path: '/pharm-branding',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PharmacyRoute = PharmacyRouteImport.update({
-  id: '/pharmacy',
-  path: '/pharmacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProcurementRoute = ProcurementRouteImport.update({
-  id: '/procurement',
-  path: '/procurement',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PublicSiteRoute = PublicSiteRouteImport.update({
-  id: '/public-site',
-  path: '/public-site',
+const VacancyRoute = VacancyRouteImport.update({
+  id: '/vacancy',
+  path: '/vacancy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegisterRoute = RegisterRouteImport.update({
@@ -104,14 +39,79 @@ const RegisterRoute = RegisterRouteImport.update({
   path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
-const VacancyRoute = VacancyRouteImport.update({
-  id: '/vacancy',
-  path: '/vacancy',
+const PublicSiteRoute = PublicSiteRouteImport.update({
+  id: '/public-site',
+  path: '/public-site',
   getParentRoute: () => rootRouteImport,
 } as any)
-const BuyerInvoiceIdRoute = BuyerInvoiceIdRouteImport.update({
-  id: '/buyer-invoice/$id',
-  path: '/buyer-invoice/$id',
+const ProcurementRoute = ProcurementRouteImport.update({
+  id: '/procurement',
+  path: '/procurement',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PharmacyRoute = PharmacyRouteImport.update({
+  id: '/pharmacy',
+  path: '/pharmacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PharmBrandingRoute = PharmBrandingRouteImport.update({
+  id: '/pharm-branding',
+  path: '/pharm-branding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrderTrackRoute = OrderTrackRouteImport.update({
+  id: '/order-track',
+  path: '/order-track',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MessagesRoute = MessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InventoryRoute = InventoryRouteImport.update({
+  id: '/inventory',
+  path: '/inventory',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DirectorRoute = DirectorRouteImport.update({
+  id: '/director',
+  path: '/director',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuyerRoute = BuyerRouteImport.update({
+  id: '/buyer',
+  path: '/buyer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountantRoute = AccountantRouteImport.update({
+  id: '/accountant',
+  path: '/accountant',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InvoiceIdRoute = InvoiceIdRouteImport.update({
+  id: '/invoice/$id',
+  path: '/invoice/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocIdRoute = DocIdRouteImport.update({
@@ -119,9 +119,9 @@ const DocIdRoute = DocIdRouteImport.update({
   path: '/doc/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const InvoiceIdRoute = InvoiceIdRouteImport.update({
-  id: '/invoice/$id',
-  path: '/invoice/$id',
+const BuyerInvoiceIdRoute = BuyerInvoiceIdRouteImport.update({
+  id: '/buyer-invoice/$id',
+  path: '/buyer-invoice/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -279,102 +279,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/accountant': {
-      id: '/accountant'
-      path: '/accountant'
-      fullPath: '/accountant'
-      preLoaderRoute: typeof AccountantRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/buyer': {
-      id: '/buyer'
-      path: '/buyer'
-      fullPath: '/buyer'
-      preLoaderRoute: typeof BuyerRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/director': {
-      id: '/director'
-      path: '/director'
-      fullPath: '/director'
-      preLoaderRoute: typeof DirectorRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/home': {
-      id: '/home'
-      path: '/home'
-      fullPath: '/home'
-      preLoaderRoute: typeof HomeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/inventory': {
-      id: '/inventory'
-      path: '/inventory'
-      fullPath: '/inventory'
-      preLoaderRoute: typeof InventoryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/messages': {
-      id: '/messages'
-      path: '/messages'
-      fullPath: '/messages'
-      preLoaderRoute: typeof MessagesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/order-track': {
-      id: '/order-track'
-      path: '/order-track'
-      fullPath: '/order-track'
-      preLoaderRoute: typeof OrderTrackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pharm-branding': {
-      id: '/pharm-branding'
-      path: '/pharm-branding'
-      fullPath: '/pharm-branding'
-      preLoaderRoute: typeof PharmBrandingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pharmacy': {
-      id: '/pharmacy'
-      path: '/pharmacy'
-      fullPath: '/pharmacy'
-      preLoaderRoute: typeof PharmacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/procurement': {
-      id: '/procurement'
-      path: '/procurement'
-      fullPath: '/procurement'
-      preLoaderRoute: typeof ProcurementRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/public-site': {
-      id: '/public-site'
-      path: '/public-site'
-      fullPath: '/public-site'
-      preLoaderRoute: typeof PublicSiteRouteImport
+    '/vacancy': {
+      id: '/vacancy'
+      path: '/vacancy'
+      fullPath: '/vacancy'
+      preLoaderRoute: typeof VacancyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/register': {
@@ -384,18 +293,109 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/vacancy': {
-      id: '/vacancy'
-      path: '/vacancy'
-      fullPath: '/vacancy'
-      preLoaderRoute: typeof VacancyRouteImport
+    '/public-site': {
+      id: '/public-site'
+      path: '/public-site'
+      fullPath: '/public-site'
+      preLoaderRoute: typeof PublicSiteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/buyer-invoice/$id': {
-      id: '/buyer-invoice/$id'
-      path: '/buyer-invoice/$id'
-      fullPath: '/buyer-invoice/$id'
-      preLoaderRoute: typeof BuyerInvoiceIdRouteImport
+    '/procurement': {
+      id: '/procurement'
+      path: '/procurement'
+      fullPath: '/procurement'
+      preLoaderRoute: typeof ProcurementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pharmacy': {
+      id: '/pharmacy'
+      path: '/pharmacy'
+      fullPath: '/pharmacy'
+      preLoaderRoute: typeof PharmacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pharm-branding': {
+      id: '/pharm-branding'
+      path: '/pharm-branding'
+      fullPath: '/pharm-branding'
+      preLoaderRoute: typeof PharmBrandingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/order-track': {
+      id: '/order-track'
+      path: '/order-track'
+      fullPath: '/order-track'
+      preLoaderRoute: typeof OrderTrackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/messages': {
+      id: '/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof MessagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inventory': {
+      id: '/inventory'
+      path: '/inventory'
+      fullPath: '/inventory'
+      preLoaderRoute: typeof InventoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/director': {
+      id: '/director'
+      path: '/director'
+      fullPath: '/director'
+      preLoaderRoute: typeof DirectorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/buyer': {
+      id: '/buyer'
+      path: '/buyer'
+      fullPath: '/buyer'
+      preLoaderRoute: typeof BuyerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/accountant': {
+      id: '/accountant'
+      path: '/accountant'
+      fullPath: '/accountant'
+      preLoaderRoute: typeof AccountantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invoice/$id': {
+      id: '/invoice/$id'
+      path: '/invoice/$id'
+      fullPath: '/invoice/$id'
+      preLoaderRoute: typeof InvoiceIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/doc/$id': {
@@ -405,11 +405,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/invoice/$id': {
-      id: '/invoice/$id'
-      path: '/invoice/$id'
-      fullPath: '/invoice/$id'
-      preLoaderRoute: typeof InvoiceIdRouteImport
+    '/buyer-invoice/$id': {
+      id: '/buyer-invoice/$id'
+      path: '/buyer-invoice/$id'
+      fullPath: '/buyer-invoice/$id'
+      preLoaderRoute: typeof BuyerInvoiceIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
