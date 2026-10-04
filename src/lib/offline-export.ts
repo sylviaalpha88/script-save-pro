@@ -478,16 +478,31 @@ function buildViewer(data: ArchiveData, range: ExportRange): string {
     },
   ];
 
+  const rowsFor = (tbl?: string) => (!tbl ? [] : tbl === "__brand" ? brandRows : (data[tbl] ?? []));
+  const formHtml = (f: NonNullable<Tab["form"]>) => {
+    const fields = f.fields.map(x => {
+      const ctrl = x.kind === "select"
+        ? `<select><option>Select…</option></select>`
+        : x.kind === "long" ? `<textarea rows="3"></textarea>`
+        : `<input type="${x.kind === "number" ? "number" : x.kind === "date" ? "date" : "text"}" />`;
+      return `<label class="fld${x.kind === "long" ? " wide" : ""}"><span>${esc(x.label)}</span>${ctrl}</label>`;
+    }).join("");
+    return `<div class="form">${f.intro ? `<p class="sub">${esc(f.intro)}</p>` : ""}<div class="grid">${fields}</div>
+<button class="btn" onclick="alert('Offline copy: this screen shows exactly what you fill on the website. Saving needs internet.')">${esc(f.button)}</button></div>`;
+  };
   const panels: Record<string, string> = {};
   for (const m of MODULES) {
     for (const t of m.tabs) {
-      const rows = t.table === "__brand" ? brandRows : (data[t.table] ?? []);
-      panels[`${m.key}::${t.label}`] = tableHtml(rows);
+      let html = "";
+      if (t.form) html += formHtml(t.form);
+      if (t.table2) html += `<h3 style="margin:18px 0 10px">Saved records</h3>` + tableHtml(rowsFor(t.table2));
+      if (t.table) html += tableHtml(rowsFor(t.table));
+      panels[`${m.key}::${t.label}`] = html;
     }
   }
 
   const counts = Object.fromEntries(
-    MODULES.map(m => [m.key, m.tabs.reduce((n, t) => n + (t.table === "__brand" ? 1 : (data[t.table]?.length ?? 0)), 0)]),
+    MODULES.map(m => [m.key, m.tabs.reduce((n, t) => n + (t.table ? rowsFor(t.table).length : 0), 0)]),
   );
 
   const modulesJson = JSON.stringify(
